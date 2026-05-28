@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: opendota-league-dashboard
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: OPENDOTA_CACHE_DIR
+        value: /opt/render/project/src/data/cache

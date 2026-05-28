@@ -1,0 +1,14 @@
+{
+  "name": "opendota-league-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Realtime OpenDota league dashboard for 鹏辉产业园第三届AMER讲伍德比赛.",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

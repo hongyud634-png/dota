@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenDota 联赛实时数据</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <section id="loginView" class="login-view">
+      <form id="loginForm" class="login-panel">
+        <div class="brand-mark">OD</div>
+        <h1>鹏辉产业园第三届AMER讲伍德比赛</h1>
+        <p>输入昵称即可查看实时联赛数据</p>
+        <input id="loginName" type="text" maxlength="40" placeholder="你的昵称" autocomplete="name" />
+        <button class="icon-button command" type="submit">
+          <i data-lucide="log-in"></i>
+          <span>登录查看</span>
+        </button>
+        <div id="loginError" class="login-error"></div>
+      </form>
+    </section>
+
+    <header id="appHeader" class="topbar hidden">
+      <div class="brand-block">
+        <div class="brand-mark">OD</div>
+        <div>
+          <h1>鹏辉产业园第三届AMER讲伍德比赛</h1>
+          <p id="statusLine">正在读取数据</p>
+        </div>
+      </div>
+      <div class="toolbar">
+        <div class="date-filter" aria-label="比赛日期筛选">
+          <label>
+            <span>开始</span>
+            <input id="startDate" type="date" />
+          </label>
+          <label>
+            <span>结束</span>
+            <input id="endDate" type="date" />
+          </label>
+          <button id="clearDatesButton" class="icon-button ghost" title="清空日期筛选">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <button id="syncButton" class="icon-button command" title="同步最新数据">
+          <i data-lucide="refresh-cw"></i>
+          <span>同步最新</span>
+        </button>
+        <div class="user-chip">
+          <i data-lucide="user"></i>
+          <span id="currentUserName">-</span>
+        </div>
+        <button id="logoutButton" class="icon-button ghost" title="退出登录">
+          <i data-lucide="log-out"></i>
+        </button>
+      </div>
+    </header>
+
+    <main id="appMain" class="hidden">
+      <section class="kpi-grid" id="kpiGrid" aria-label="核心指标"></section>
+
+      <section class="overview-grid">
+        <div class="panel ranking-panel">
+          <div class="panel-head">
+            <div>
+              <h2>指标排行</h2>
+              <p id="rankingHint">Top 10</p>
+            </div>
+            <select id="metricSelect" aria-label="选择排行指标"></select>
+          </div>
+          <div id="rankingList" class="ranking-list"></div>
+        </div>
+
+        <div class="panel matches-panel">
+          <div class="panel-head">
+            <div>
+              <h2>最近比赛</h2>
+              <p id="latestMatchText">-</p>
+            </div>
+            <a id="leagueLink" class="text-link" target="_blank" rel="noreferrer">OpenDota</a>
+          </div>
+          <div id="recentMatches" class="match-list"></div>
+        </div>
+      </section>
+
+      <section class="panel table-panel">
+        <div class="panel-head">
+          <div>
+            <h2>玩家均值</h2>
+            <p id="playerCountText">-</p>
+          </div>
+          <div class="table-tools">
+            <div class="searchbox">
+              <i data-lucide="search"></i>
+              <input id="playerSearch" type="search" placeholder="搜索玩家ID或名称" />
+            </div>
+            <select id="sortSelect" aria-label="玩家表排序">
+              <option value="matches">按出场数</option>
+              <option value="win_rate">按胜率</option>
+              <option value="kda">按KDA</option>
+              <option value="avg_kills">按击杀</option>
+              <option value="avg_deaths">按死亡</option>
+              <option value="avg_assists">按助攻</option>
+              <option value="avg_gold_per_min">按GPM</option>
+              <option value="avg_xp_per_min">按XPM</option>
+              <option value="avg_net_worth">按经济</option>
+              <option value="avg_hero_damage">按英雄伤害</option>
+              <option value="avg_tower_damage">按塔伤</option>
+              <option value="avg_hero_healing">按治疗</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>玩家ID</th>
+                <th>玩家名</th>
+                <th>常用英雄</th>
+                <th>场次</th>
+                <th>胜</th>
+                <th>负</th>
+                <th>胜率</th>
+                <th>平均时长</th>
+                <th>KDA</th>
+                <th>击杀</th>
+                <th>死亡</th>
+                <th>助攻</th>
+                <th>GPM</th>
+                <th>XPM</th>
+                <th>补刀</th>
+                <th>反补</th>
+                <th>经济</th>
+                <th>英雄伤害</th>
+                <th>塔伤</th>
+                <th>治疗</th>
+                <th>最近比赛</th>
+              </tr>
+            </thead>
+            <tbody id="playerTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel table-panel">
+        <div class="panel-head">
+          <div>
+            <h2>比赛明细</h2>
+            <p id="matchCountText">-</p>
+          </div>
+          <select id="matchFilter" aria-label="比赛明细筛选">
+            <option value="recent">最近30场</option>
+            <option value="issues">异常比赛</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>比赛ID</th>
+                <th>开始时间</th>
+                <th>时长</th>
+                <th>天辉</th>
+                <th>夜魇</th>
+                <th>胜方</th>
+                <th>玩家数</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody id="matchTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
