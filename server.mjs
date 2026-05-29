@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "public");
+const seedPath = path.join(__dirname, "seed", "opendota_league_18113_seed.json");
 const cacheDir = process.env.OPENDOTA_CACHE_DIR
   ?? (process.env.NODE_ENV === "production"
     ? path.join(__dirname, "data", "cache")
@@ -34,6 +35,7 @@ const state = {
 };
 
 const sessions = new Map();
+let seedDataPromise = null;
 
 const metricRanking = [
   ["win_rate", "胜率", "desc", "percent"],
@@ -173,6 +175,13 @@ async function writeJson(filePath, value) {
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
+async function readSeedData() {
+  if (!seedDataPromise) {
+    seedDataPromise = readJsonIfExists(seedPath);
+  }
+  return await seedDataPromise;
+}
+
 async function fetchJson(url, { retries = 5, timeoutMs = 45000 } = {}) {
   let lastError;
   for (let attempt = 1; attempt <= retries; attempt += 1) {
@@ -203,6 +212,10 @@ async function fetchJson(url, { retries = 5, timeoutMs = 45000 } = {}) {
 async function loadHeroes() {
   let heroes = await readJsonIfExists(path.join(cacheDir, "heroes.json"));
   if (!heroes) {
+    const seed = await readSeedData();
+    heroes = seed?.heroes ?? null;
+  }
+  if (!heroes) {
     heroes = await fetchJson(`${CONFIG.apiBase}/constants/heroes`);
     await writeJson(path.join(cacheDir, "heroes.json"), heroes);
   }
@@ -225,11 +238,26 @@ async function loadCachedMatches() {
       state.matchesById.set(Number(match.match_id), match);
     }
   }
+  if (state.matchesById.size === 0) {
+    const seed = await readSeedData();
+    for (const match of seed?.matches ?? []) {
+      if (Number(match.leagueid) === CONFIG.leagueId) {
+        state.matchesById.set(Number(match.match_id), match);
+      }
+    }
+  }
 }
 
 async function loadMatchIdsFromCache() {
   const ids = await readJsonIfExists(path.join(cacheDir, `league_${CONFIG.leagueId}_match_ids_latest.json`));
-  state.matchIds = Array.isArray(ids) ? ids.map(Number).filter(Number.isFinite) : Array.from(state.matchesById.keys());
+  if (Array.isArray(ids)) {
+    state.matchIds = ids.map(Number).filter(Number.isFinite);
+    return;
+  }
+  const seed = await readSeedData();
+  state.matchIds = Array.isArray(seed?.matchIds)
+    ? seed.matchIds.map(Number).filter(Number.isFinite)
+    : Array.from(state.matchesById.keys());
 }
 
 async function fetchMatchIds() {
