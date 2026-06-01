@@ -10,6 +10,15 @@ npm start
 
 默认地址：`http://127.0.0.1:4173`
 
+## 部署到 Cloudflare Workers
+
+```bash
+npm install
+npm run deploy:cloudflare
+```
+
+Cloudflare 版本使用 `wrangler.jsonc` 和 `src/worker.mjs`，不需要绑定信用卡。首次部署前先运行 `npx wrangler login` 登录 Cloudflare。
+
 ## 部署到 Render
 
 1. 把本目录推送到 GitHub/GitLab/Bitbucket。

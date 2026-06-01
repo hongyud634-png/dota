@@ -6,7 +6,12 @@
   "description": "Realtime OpenDota league dashboard for 鹏辉产业园第三届AMER讲伍德比赛.",
   "scripts": {
     "start": "node server.mjs",
-    "dev": "node server.mjs"
+    "dev": "node server.mjs",
+    "dev:cloudflare": "wrangler dev",
+    "deploy:cloudflare": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.95.0"
   },
   "engines": {
     "node": ">=20"

@@ -1,6 +1,30 @@
 # Deployment
 
-This app is a single Node.js web service. It is ready for Render Blueprint deployment.
+This app can run either as the original Node.js web service or as a Cloudflare Worker with static assets.
+
+## Cloudflare Workers
+
+Cloudflare is the recommended no-credit-card deployment path for this project.
+
+1. Create or log in to a Cloudflare account.
+2. Authenticate Wrangler:
+   ```bash
+   npx wrangler login
+   ```
+3. Deploy:
+   ```bash
+   npm install
+   npm run deploy:cloudflare
+   ```
+
+The Worker uses:
+
+- Worker entry: `src/worker.mjs`
+- Static assets: `public/`
+- Config: `wrangler.jsonc`
+- Health check: `/api/health`
+
+The Cloudflare version loads the bundled seed data immediately, then fetches new OpenDota matches on demand when users click "同步最新".
 
 ## Render
 
