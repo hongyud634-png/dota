@@ -26,6 +26,20 @@ The Worker uses:
 
 The Cloudflare version loads the bundled seed data immediately, then fetches new OpenDota matches on demand when users click "同步最新".
 
+## GitHub Pages
+
+GitHub Pages is the fallback for networks where `workers.dev` cannot be opened.
+
+The project includes `.github/workflows/pages.yml`. Every push to `main` uploads `public/` as a Pages artifact.
+
+Expected URL:
+
+```text
+https://hongyud634-png.github.io/dota/
+```
+
+The GitHub Pages version is static. It reads `public/data/opendota_league_18113_seed.json` in the browser and automatically falls back to local nickname login when `/api` is unavailable. The "同步最新" button tries to fetch OpenDota directly from the browser; if the user's network blocks it, the bundled seed data remains available.
+
 ## Render
 
 1. Push this repository to GitHub, GitLab, or Bitbucket.

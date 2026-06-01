@@ -9,6 +9,7 @@ const appState = {
   query: "",
   matchFilter: "recent",
   loading: false,
+  staticMode: false,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -81,9 +82,17 @@ function showApp() {
 }
 
 async function checkAuth() {
-  const response = await fetch("/api/me", { cache: "no-store" });
-  const payload = await response.json();
-  appState.user = payload.user;
+  try {
+    const response = await fetch("/api/me", { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const payload = await response.json();
+    appState.user = payload.user;
+  } catch {
+    if (!window.StaticBackend) throw new Error("没有可用的数据接口");
+    appState.staticMode = true;
+    await window.StaticBackend.init();
+    appState.user = window.StaticBackend.currentUser();
+  }
   if (appState.user) {
     showApp();
     await fetchDashboard();
@@ -93,6 +102,12 @@ async function checkAuth() {
 }
 
 async function login(name) {
+  if (appState.staticMode) {
+    appState.user = window.StaticBackend.login(name);
+    showApp();
+    await fetchDashboard();
+    return;
+  }
   const response = await fetch("/api/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -106,6 +121,13 @@ async function login(name) {
 }
 
 async function logout() {
+  if (appState.staticMode) {
+    window.StaticBackend.logout();
+    appState.user = null;
+    appState.data = null;
+    showLogin();
+    return;
+  }
   await fetch("/api/logout", { method: "POST" });
   appState.user = null;
   appState.data = null;
@@ -126,6 +148,16 @@ async function fetchDashboard({ refresh = false, wait = false } = {}) {
   if (refresh) params.set("refresh", "1");
   if (wait) params.set("wait", "1");
   try {
+    if (appState.staticMode) {
+      appState.data = await window.StaticBackend.dashboard({
+        startDate: appState.startDate,
+        endDate: appState.endDate,
+        refresh,
+        wait,
+      });
+      render();
+      return;
+    }
     const response = await fetch(`/api/dashboard?${params.toString()}`, { cache: "no-store" });
     if (response.status === 401) {
       appState.user = null;
