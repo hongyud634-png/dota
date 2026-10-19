@@ -4,7 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>OpenDota 联赛实时数据</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" type="image/png" href="assets/boxing-logo.png" />
+    <link rel="stylesheet" href="styles.css?v=boxing-logo-1" />
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
     <script src="static-data.js?v=daily-data-1" defer></script>
     <script src="app.js?v=daily-data-1" defer></script>
@@ -12,7 +13,7 @@
   <body>
     <section id="loginView" class="login-view">
       <form id="loginForm" class="login-panel">
-        <div class="brand-mark">OD</div>
+        <img class="brand-mark" src="assets/boxing-logo.png" alt="内战数据 Logo" width="88" height="88" />
         <h1>鹏辉产业园第三届AMER讲伍德比赛</h1>
         <p>输入昵称即可查看实时联赛数据</p>
         <input id="loginName" type="text" maxlength="40" placeholder="你的昵称" autocomplete="name" />
@@ -26,7 +27,7 @@
 
     <header id="appHeader" class="topbar hidden">
       <div class="brand-block">
-        <div class="brand-mark">OD</div>
+        <img class="brand-mark" src="assets/boxing-logo.png" alt="内战数据 Logo" width="44" height="44" />
         <div>
           <h1>鹏辉产业园第三届AMER讲伍德比赛</h1>
           <p id="statusLine">正在读取数据</p>
