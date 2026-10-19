@@ -12,7 +12,6 @@ on:
 permissions:
   contents: write
   pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -21,9 +20,6 @@ concurrency:
 jobs:
   deploy:
     timeout-minutes: 60
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -50,14 +46,19 @@ jobs:
             git push
           fi
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
+      - name: Publish to existing Pages source branch
+        run: |
+          git fetch origin gh-pages
+          git worktree add --detach "$RUNNER_TEMP/dota-pages" origin/gh-pages
+          cp -a public/. "$RUNNER_TEMP/dota-pages/"
+          git -C "$RUNNER_TEMP/dota-pages" add .
+          if ! git -C "$RUNNER_TEMP/dota-pages" diff --cached --quiet; then
+            git -C "$RUNNER_TEMP/dota-pages" commit -m "Publish updated league dashboard"
+            git -C "$RUNNER_TEMP/dota-pages" push origin HEAD:gh-pages
+          fi
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: public
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      # GITHUB_TOKEN pushes do not automatically start a Pages build.
+      - name: Request Pages build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
