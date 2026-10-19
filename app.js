@@ -210,12 +210,26 @@ function renderMetricOptions(data) {
 function renderRanking(data) {
   const ranking = data.rankings[appState.metric] ?? data.rankings.win_rate;
   $("rankingHint").textContent = `${ranking.label} Top 10 · 已剔除少于 ${data.league.ranking_min_matches} 场的玩家`;
-  $("rankingList").innerHTML = ranking.rows
+  const podium = ranking.rows.slice(0, 3).map((row) => `
+    <article class="podium-place podium-place-${row.rank}" aria-label="第 ${row.rank} 名">
+      <div class="podium-value">${formatMetric(row.value, ranking.format)}</div>
+      <div class="podium-player">
+        ${heroImages(row.top_heroes)}
+        <strong title="${escapeHtml(row.personaname || row.account_id)}">${escapeHtml(row.personaname || row.account_id)}</strong>
+        <span title="${escapeHtml(row.account_id)} · ${row.matches} 场">${escapeHtml(row.account_id)} · ${row.matches} 场</span>
+      </div>
+      <div class="podium-platform">
+        <b>${row.rank}</b>
+        <span>${["冠军", "亚军", "季军"][row.rank - 1]}</span>
+      </div>
+    </article>
+  `).join("");
+  const remaining = ranking.rows.slice(3)
     .map((row) => `
       <div class="rank-row">
         <span class="rank">${row.rank}</span>
         <div class="player-line">
-          <strong>${escapeHtml(row.personaname || row.account_id)}</strong>
+          <strong title="${escapeHtml(row.personaname || row.account_id)}">${escapeHtml(row.personaname || row.account_id)}</strong>
           <span>${escapeHtml(row.account_id)} · ${row.matches} 场</span>
         </div>
         ${heroImages(row.top_heroes)}
@@ -223,6 +237,9 @@ function renderRanking(data) {
       </div>
     `)
     .join("");
+  $("rankingList").innerHTML = podium
+    ? `<div class="ranking-podium">${podium}</div>${remaining}`
+    : '<div class="empty-state">当前范围内暂无符合排行门槛的玩家</div>';
 }
 
 function renderRecentMatches(data) {
