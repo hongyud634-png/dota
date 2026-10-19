@@ -142,6 +142,7 @@ async function fetchDashboard({ refresh = false, wait = false } = {}) {
   if (appState.loading) return;
   appState.loading = true;
   $("syncButton").disabled = true;
+  if (refresh) setStatus("正在同步全部比赛数据，请稍候…");
   const params = new URLSearchParams();
   if (appState.startDate) params.set("startDate", appState.startDate);
   if (appState.endDate) params.set("endDate", appState.endDate);
@@ -344,9 +345,9 @@ function initializeDateInputs(data) {
 function render() {
   const data = appState.data;
   if (!data) return;
-  const syncText = data.league.is_syncing ? "同步中" : "已同步";
+  const syncText = data.league.is_syncing ? "同步中" : data.league.last_error ? "同步未完成" : "数据更新于";
   const errorText = data.league.last_error ? ` · ${data.league.last_error}` : "";
-  setStatus(`${data.league.scope_label} · ${syncText} · ${data.league.generated_at}${errorText}`);
+  setStatus(`${data.league.scope_label} · ${syncText} ${data.league.last_sync_finished_at || "更新时间未知"}${errorText}`);
   initializeDateInputs(data);
   renderKpis(data);
   renderMetricOptions(data);

@@ -4,7 +4,6 @@
     leagueName: "鹏辉产业园第三届AMER讲伍德比赛",
     apiBase: "https://api.opendota.com/api",
     rankingMinMatchRate: 0.03,
-    maxMissingMatchesPerSync: 20,
     storageKey: "opendota_static_user",
   };
 
@@ -173,7 +172,9 @@
     state.matchIds = Array.isArray(seedData.matchIds)
       ? seedData.matchIds.map(Number).filter(Number.isFinite)
       : Array.from(state.matchesById.keys());
-    state.lastSyncFinishedAt = seedData.generatedAt ? `${seedData.generatedAt} seed` : isoBeijingNow();
+    state.lastSyncFinishedAt = seedData.generatedAt
+      ? toBeijingString(Date.parse(seedData.generatedAt) / 1000)
+      : null;
   }
 
   async function init() {
@@ -194,18 +195,21 @@
     state.lastError = null;
     try {
       const ids = await fetchJson(`${CONFIG.apiBase}/leagues/${CONFIG.leagueId}/matchIds`);
-      const numericIds = ids.map(Number).filter(Number.isFinite);
+      if (!Array.isArray(ids) || ids.length === 0 || ids.some((id) => !Number.isSafeInteger(Number(id)) || Number(id) <= 0)) {
+        throw new Error("比赛列表无效，保留已有数据");
+      }
+      const numericIds = [...new Set([...state.matchesById.keys(), ...ids.map(Number)])];
       state.matchIds = numericIds;
       const missing = numericIds
         .filter((id) => !state.matchesById.has(Number(id)))
-        .sort((a, b) => b - a)
-        .slice(0, CONFIG.maxMissingMatchesPerSync);
+        .sort((a, b) => b - a);
       for (const matchId of missing) {
         const match = await fetchJson(`${CONFIG.apiBase}/matches/${matchId}`);
-        if (Number(match.leagueid) === CONFIG.leagueId) {
-          state.matchesById.set(Number(match.match_id), match);
+        if (Number(match.match_id) !== matchId || Number(match.leagueid) !== CONFIG.leagueId || !Array.isArray(match.players) || match.players.length === 0) {
+          throw new Error(`比赛 ${matchId} 明细不完整`);
         }
-        await sleep(100);
+        state.matchesById.set(Number(match.match_id), match);
+        await sleep(1250);
       }
       state.lastSyncFinishedAt = isoBeijingNow();
     } catch (error) {

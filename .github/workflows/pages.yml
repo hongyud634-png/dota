@@ -5,9 +5,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+  schedule:
+    # 08:17 Asia/Shanghai, every day.
+    - cron: "17 0 * * *"
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -17,6 +20,7 @@ concurrency:
 
 jobs:
   deploy:
+    timeout-minutes: 60
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -24,6 +28,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check data update and filtering
+        run: node scripts/check-data.mjs
+
+      - name: Update complete league data
+        run: node scripts/update-data.mjs
+
+      - name: Save updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/opendota_league_18113_seed.json seed/opendota_league_18113_seed.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update league data"
+            git push
+          fi
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
