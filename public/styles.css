@@ -58,8 +58,8 @@ select {
 }
 
 .brand-mark {
-  display: grid;
-  place-items: center;
+  display: block;
+  object-fit: cover;
   width: 44px;
   height: 44px;
   flex: 0 0 auto;
@@ -87,6 +87,8 @@ select {
 }
 
 .login-panel .brand-mark {
+  width: 88px;
+  height: 88px;
   margin-bottom: 18px;
 }
 
@@ -584,7 +586,8 @@ th.num {
   }
 
   .brand-mark {
-    display: none;
+    width: 36px;
+    height: 36px;
   }
 
   .kpi-grid {
