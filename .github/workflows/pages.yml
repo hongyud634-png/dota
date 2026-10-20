@@ -31,10 +31,19 @@ jobs:
           node-version: 22
 
       - name: Check data update and filtering
-        run: node scripts/check-data.mjs
+        run: |
+          node scripts/check-data.mjs
+          node scripts/check-heroes.mjs
+          node scripts/check-auto-sync.mjs
+          node scripts/check-ranking.mjs
 
       - name: Update complete league data
-        run: node scripts/update-data.mjs
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            node scripts/update-data.mjs
+          else
+            node scripts/update-data.mjs --backfill-all
+          fi
 
       - name: Save updated data
         run: |

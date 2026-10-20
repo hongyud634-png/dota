@@ -3,6 +3,7 @@ import http from "node:http";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { buildHeroStats } from "./public/hero-stats.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "public");
@@ -70,6 +71,7 @@ const numericStats = [
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".svg": "image/svg+xml",
@@ -480,6 +482,7 @@ function buildDataset(filters = {}) {
 
   const latestMatch = matches.at(-1);
   return {
+    ...buildHeroStats(matches, state.heroesById, state.heroImagesById),
     league: {
       id: CONFIG.leagueId,
       name: CONFIG.leagueName,

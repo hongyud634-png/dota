@@ -4,7 +4,7 @@ async (page) => {
     await page.getByRole('textbox', { name: '你的昵称' }).fill('UI验证');
     await page.getByRole('button', { name: '登录查看' }).click();
   }
-  await page.waitForFunction(() => document.querySelectorAll('.podium-place').length === 3);
+  await page.waitForFunction(() => document.querySelectorAll('#rankingList .podium-place').length === 3);
   const baseline = await page.evaluate(async () => {
     const original = await StaticBackend.dashboard();
     return {
@@ -19,7 +19,7 @@ async (page) => {
     await page.locator('#metricSelect').selectOption(metric);
     const correct = await page.evaluate(() => {
       const ranking = appState.data.rankings[appState.metric];
-      const values = [...document.querySelectorAll('.podium-value, .rank-row .rank-value')].map(el => el.textContent);
+      const values = [...document.querySelectorAll('#rankingList .podium-value, #rankingList .rank-row .rank-value')].map(el => el.textContent);
       return JSON.stringify(values) === JSON.stringify(ranking.rows.map(row => formatMetric(row.value, ranking.format)));
     });
     check(correct, `Incorrect displayed values for ${metric}`);
@@ -29,7 +29,7 @@ async (page) => {
     await page.setViewportSize({ width, height });
     const layout = await page.evaluate(() => ({
       overflow: document.documentElement.scrollWidth > innerWidth,
-      steps: [...document.querySelectorAll('.podium-platform')].map(el => ({ x:el.getBoundingClientRect().x, bottom:el.getBoundingClientRect().bottom, height:el.getBoundingClientRect().height })),
+      steps: [...document.querySelectorAll('#rankingList .podium-platform')].map(el => ({ x:el.getBoundingClientRect().x, bottom:el.getBoundingClientRect().bottom, height:el.getBoundingClientRect().height })),
       logo: document.querySelector('.brand-block .brand-mark').getAttribute('src'),
     }));
     check(!layout.overflow, `${label}: page overflows horizontally`);
@@ -72,7 +72,7 @@ async (page) => {
       const ranking = appState.data.rankings[key];
       const rows = ranking.rows.slice(0,count).map(row => ({...row, personaname:'长昵称'.repeat(30), top_heroes:[]}));
       renderRanking({...appState.data, rankings:{...appState.data.rankings,[key]:{...ranking,rows}}});
-      if (document.documentElement.scrollWidth > innerWidth || document.querySelectorAll('.podium-place').length !== Math.min(count,3)) return false;
+      if (document.documentElement.scrollWidth > innerWidth || document.querySelectorAll('#rankingList .podium-place').length !== Math.min(count,3)) return false;
     }
     renderRanking(appState.data);
     return true;

@@ -47,12 +47,13 @@ export async function updateData(seed, request = fetchJson, pause = sleep) {
   };
 }
 
-export async function backfillDrafts(seed, request = fetchJson, pause = sleep) {
+export async function backfillDrafts(seed, request = fetchJson, pause = sleep, attempted = new Set()) {
   const now = Date.now();
-  const pending = seed.matches.filter(match => !draftBans(match)
+  const pending = seed.matches.filter(match => !attempted.has(match.match_id) && !draftBans(match)
     && (!match.draft_checked_at || now - Date.parse(match.draft_checked_at) >= 86400000)).slice(0,50);
   const replacements = new Map();
   for (const match of pending) {
+    attempted.add(match.match_id);
     try {
       await pause(1250);
       const raw = await request(`/matches/${match.match_id}`);
@@ -69,7 +70,17 @@ export async function backfillDrafts(seed, request = fetchJson, pause = sleep) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const seed = JSON.parse(await readFile(seedUrl, "utf8"));
-  const updated = await backfillDrafts(await updateData(seed));
+  let updated = await updateData(seed);
+  const attempted = new Set();
+  do {
+    const previousAttempts = attempted.size;
+    updated = await backfillDrafts(updated, fetchJson, sleep, attempted);
+    if (!process.argv.includes("--backfill-all") || attempted.size === previousAttempts) break;
+    // Save each completed batch so a later network failure cannot discard it.
+    const batch = JSON.stringify(updated);
+    await writeFile(seedUrl, batch);
+    await writeFile(new URL("../seed/opendota_league_18113_seed.json", import.meta.url), batch);
+  } while (true);
   const content = JSON.stringify(updated);
   await writeFile(seedUrl, content);
   await writeFile(new URL("../seed/opendota_league_18113_seed.json", import.meta.url), content);

@@ -5,6 +5,7 @@ const appState = {
   endDate: "",
   datesInitialized: false,
   metric: "win_rate",
+  heroMetric: "win_rate",
   sort: "matches",
   query: "",
   matchFilter: "recent",
@@ -155,7 +156,12 @@ async function fetchDashboard({ refresh = false, wait = false } = {}) {
         endDate: appState.endDate,
         refresh,
         wait,
+        autoRefresh: true,
+        onProgress: (message) => setStatus(`${refresh ? "手动同步" : "自动补齐"} · ${message}`),
       });
+      if (appState.data.league.date_start !== appState.startDate || appState.data.league.date_end !== appState.endDate) {
+        appState.data = await window.StaticBackend.dashboard({startDate:appState.startDate, endDate:appState.endDate});
+      }
       render();
       return;
     }
@@ -240,6 +246,45 @@ function renderRanking(data) {
   $("rankingList").innerHTML = podium
     ? `<div class="ranking-podium">${podium}</div>${remaining}`
     : '<div class="empty-state">当前范围内暂无符合排行门槛的玩家</div>';
+}
+
+function renderHeroRanking(data) {
+  const ranking = data.hero_rankings?.[appState.heroMetric];
+  const coverage = data.hero_coverage;
+  if (!ranking || !coverage) {
+    $("heroRankingHint").textContent = "英雄统计暂不可用";
+    $("heroCoverage").textContent = "";
+    $("heroRankingList").innerHTML = '<div class="empty-state">暂无可用数据</div>';
+    return;
+  }
+  $("heroRankingHint").textContent = `${ranking.label} Top 10 · ${appState.heroMetric === "win_rate" ? "所有出场英雄参与，注意样本量" : appState.heroMetric === "ban_rate" ? `按 ${coverage.bp_matches} 场有效 BP 记录统计` : `按 ${coverage.valid_matches} 场有效比赛统计`}`;
+  $("heroCoverage").textContent = `本范围 ${coverage.total_matches} 场 · 选取／胜率有效 ${coverage.valid_matches} 场（排除 ${coverage.excluded_matches} 场）· BP 可用 ${coverage.bp_matches} 场（未纳入 ${coverage.bp_excluded_matches} 场）`;
+  const sample = (hero) => appState.heroMetric === "ban_rate"
+    ? `${hero.banned_matches} / ${coverage.bp_matches} 场禁用`
+    : appState.heroMetric === "pick_rate" ? `${hero.picked_matches} / ${coverage.valid_matches} 场选取`
+    : `${hero.wins} 胜 ${hero.losses} 负 · ${hero.picked_matches} 场出场`;
+  const portrait = (hero) => hero.hero_image
+    ? `<img class="hero-portrait" src="${escapeHtml(hero.hero_image)}" alt="${escapeHtml(hero.hero_name)}" loading="lazy">`
+    : '<span class="hero-portrait hero-placeholder" aria-label="暂无英雄图片">—</span>';
+  const podium = ranking.rows.slice(0,3).map(hero => `
+    <article class="podium-place podium-place-${hero.rank}" aria-label="第 ${hero.rank} 名">
+      <div class="podium-value">${formatPercent(hero.value)}</div>
+      <div class="podium-player">
+        ${portrait(hero)}
+        <strong title="${escapeHtml(hero.hero_name)}">${escapeHtml(hero.hero_name)}</strong>
+        <span title="${sample(hero)}">${sample(hero)}</span>
+      </div>
+      <div class="podium-platform"><b>${hero.rank}</b><span>${["冠军","亚军","季军"][hero.rank-1]}</span></div>
+    </article>`).join("");
+  const remaining = ranking.rows.slice(3).map(hero => `
+    <div class="rank-row hero-rank-row">
+      <span class="rank">${hero.rank}</span>${portrait(hero)}
+      <div class="player-line"><strong title="${escapeHtml(hero.hero_name)}">${escapeHtml(hero.hero_name)}</strong><span>${sample(hero)}</span></div>
+      <div class="rank-value">${formatPercent(hero.value)}</div>
+    </div>`).join("");
+  $("heroRankingList").innerHTML = podium
+    ? `<div class="ranking-podium">${podium}</div>${remaining}`
+    : '<div class="empty-state">暂无可用数据</div>';
 }
 
 function renderRecentMatches(data) {
@@ -364,11 +409,12 @@ function render() {
   if (!data) return;
   const syncText = data.league.is_syncing ? "同步中" : data.league.last_error ? "同步未完成" : "数据更新于";
   const errorText = data.league.last_error ? ` · ${data.league.last_error}` : "";
-  setStatus(`${data.league.scope_label} · ${syncText} ${data.league.last_sync_finished_at || "更新时间未知"}${errorText}`);
+  setStatus(`${data.league.scope_label} · ${data.league.data_stale ? "数据已过期 · " : ""}${syncText} ${data.league.last_sync_finished_at || "更新时间未知"}${errorText}`);
   initializeDateInputs(data);
   renderKpis(data);
   renderMetricOptions(data);
   renderRanking(data);
+  renderHeroRanking(data);
   renderRecentMatches(data);
   renderPlayers(data);
   renderMatchTable(data);
@@ -406,6 +452,10 @@ function bindEvents() {
     appState.metric = event.target.value;
     renderRanking(appState.data);
   });
+  $("heroMetricSelect").addEventListener("change", (event) => {
+    appState.heroMetric = event.target.value;
+    if (appState.data) renderHeroRanking(appState.data);
+  });
   $("sortSelect").addEventListener("change", (event) => {
     appState.sort = event.target.value;
     renderPlayers(appState.data);
@@ -417,6 +467,9 @@ function bindEvents() {
   $("matchFilter").addEventListener("change", (event) => {
     appState.matchFilter = event.target.value;
     renderMatchTable(appState.data);
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") fetchDashboard();
   });
 }
 
