@@ -1,6 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { setTimeout as sleep } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
+import { draftBans } from "../public/hero-stats.mjs";
 
 const leagueId = 18113;
 const seedUrl = new URL("../public/data/opendota_league_18113_seed.json", import.meta.url);
@@ -46,9 +47,29 @@ export async function updateData(seed, request = fetchJson, pause = sleep) {
   };
 }
 
+export async function backfillDrafts(seed, request = fetchJson, pause = sleep) {
+  const now = Date.now();
+  const pending = seed.matches.filter(match => !draftBans(match)
+    && (!match.draft_checked_at || now - Date.parse(match.draft_checked_at) >= 86400000)).slice(0,50);
+  const replacements = new Map();
+  for (const match of pending) {
+    try {
+      await pause(1250);
+      const raw = await request(`/matches/${match.match_id}`);
+      if (Number(raw.match_id) !== Number(match.match_id) || Number(raw.leagueid) !== leagueId) throw new Error("Mismatched match");
+      replacements.set(match.match_id, {...match, game_mode:raw.game_mode, picks_bans:Array.isArray(raw.picks_bans) ? raw.picks_bans : null,
+        draft_checked_at:new Date().toISOString() });
+      console.log(`Checked draft ${match.match_id}: ${draftBans(raw) ? "available" : "unavailable"}`);
+    } catch (error) {
+      console.warn(`Draft ${match.match_id} deferred: ${error.message}`);
+    }
+  }
+  return {...seed, matches:seed.matches.map(match => replacements.get(match.match_id) ?? match)};
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const seed = JSON.parse(await readFile(seedUrl, "utf8"));
-  const updated = await updateData(seed);
+  const updated = await backfillDrafts(await updateData(seed));
   const content = JSON.stringify(updated);
   await writeFile(seedUrl, content);
   await writeFile(new URL("../seed/opendota_league_18113_seed.json", import.meta.url), content);
