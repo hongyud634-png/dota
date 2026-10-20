@@ -1,0 +1,55 @@
+name: Hourly league refresh
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"
+    # Temporary schedule-registration check; remove after a real scheduled publish.
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check statistics and recovery
+        run: |
+          node scripts/check-data.mjs
+          node scripts/check-heroes.mjs
+          node scripts/check-auto-sync.mjs
+          node scripts/check-ranking.mjs
+      - name: Refresh league data and draft coverage
+        run: node scripts/update-data.mjs
+      - name: Save and publish updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/opendota_league_18113_seed.json seed/opendota_league_18113_seed.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Hourly league data update"
+            git push
+          fi
+          git fetch origin gh-pages
+          git worktree add --detach "$RUNNER_TEMP/dota-pages" origin/gh-pages
+          cp -a public/. "$RUNNER_TEMP/dota-pages/"
+          git -C "$RUNNER_TEMP/dota-pages" add .
+          if ! git -C "$RUNNER_TEMP/dota-pages" diff --cached --quiet; then
+            git -C "$RUNNER_TEMP/dota-pages" commit -m "Publish hourly league data"
+            git -C "$RUNNER_TEMP/dota-pages" push origin HEAD:gh-pages
+          fi
+      - name: Request Pages build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"

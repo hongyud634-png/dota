@@ -47,12 +47,13 @@ export async function updateData(seed, request = fetchJson, pause = sleep) {
   };
 }
 
-export async function backfillDrafts(seed, request = fetchJson, pause = sleep, attempted = new Set()) {
+export async function backfillDrafts(seed, request = fetchJson, pause = sleep, attempted = new Set(), deadline = Infinity) {
   const now = Date.now();
   const pending = seed.matches.filter(match => !attempted.has(match.match_id) && !draftBans(match)
     && (!match.draft_checked_at || now - Date.parse(match.draft_checked_at) >= 86400000)).slice(0,50);
   const replacements = new Map();
   for (const match of pending) {
+    if (Date.now() >= deadline) break;
     attempted.add(match.match_id);
     try {
       await pause(1250);
@@ -72,9 +73,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const seed = JSON.parse(await readFile(seedUrl, "utf8"));
   let updated = await updateData(seed);
   const attempted = new Set();
+  const deadline = Date.now() + 20 * 60 * 1000;
   do {
     const previousAttempts = attempted.size;
-    updated = await backfillDrafts(updated, fetchJson, sleep, attempted);
+    updated = await backfillDrafts(updated, fetchJson, sleep, attempted, deadline);
     if (!process.argv.includes("--backfill-all") || attempted.size === previousAttempts) break;
     // Save each completed batch so a later network failure cannot discard it.
     const batch = JSON.stringify(updated);

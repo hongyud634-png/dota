@@ -40,4 +40,6 @@ await backfillDrafts(unavailable,async()=>{emptyCalls++;},async()=>{});
 assert.equal(emptyCalls,1,"unavailable draft is checked at most once per day");
 const failed = await backfillDrafts({matches:[old[0]]},async()=>{throw Error('network');},async()=>{});
 assert.equal(failed.matches[0].draft_checked_at,undefined,"network failures remain retryable");
+const expired = await backfillDrafts({matches:[old[0]]},async()=>{throw Error('must not request after deadline');},async()=>{},new Set(),0);
+assert.deepEqual(expired.matches[0],old[0],"backfill budget must preserve records and leave time for publishing");
 console.log("PASS: hero formulas, coverage, all-sample ranking, ties, bad records, deduplication, 50-game backfill batches and preserved player data");
