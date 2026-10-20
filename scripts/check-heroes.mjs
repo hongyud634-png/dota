@@ -30,15 +30,16 @@ assert.equal(buildHeroStats([]).hero_rankings.ban_rate.rows.length,0);
 assert.equal(buildHeroStats([{...a,picks_bans:null}]).hero_stats[0].ban_rate,null,"missing bans are unknown, not zero");
 assert.equal(JSON.stringify([a,b,bad]),before);
 
-const old = Array.from({length:60},(_,i) => ({...a,match_id:100+i,picks_bans:undefined}));
+const old = Array.from({length:60},(_,i) => ({...a,match_id:100+i,game_mode:11,picks_bans:undefined}));
 let calls=0;
-const request = async path => {calls++;return {...a,match_id:Number(path.split('/').at(-1)),players:[]};};
+const request = async path => {calls++;return {...a,match_id:Number(path.split('/').at(-1)),game_mode:2,players:[]};};
 const first = await backfillDrafts({matches:old},request,async()=>{});
 assert.equal(calls,50);
 const second = await backfillDrafts(first,request,async()=>{});
 assert.equal(calls,60);
 assert.ok(second.matches.every(m => draftBans(m)));
 assert.deepEqual(second.matches[0].players,old[0].players,"backfill must not replace player records");
+assert.equal(second.matches[0].game_mode,11,"backfill must not replace unrelated match fields");
 let emptyCalls=0;
 const unavailable = await backfillDrafts({matches:[old[0]]},async()=>{emptyCalls++;return {...a,match_id:100,picks_bans:null};},async()=>{});
 await backfillDrafts(unavailable,async()=>{emptyCalls++;},async()=>{});

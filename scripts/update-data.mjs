@@ -59,7 +59,7 @@ export async function backfillDrafts(seed, request = fetchJson, pause = sleep, a
       await pause(1250);
       const raw = await request(`/matches/${match.match_id}`);
       if (Number(raw.match_id) !== Number(match.match_id) || Number(raw.leagueid) !== leagueId) throw new Error("Mismatched match");
-      replacements.set(match.match_id, {...match, game_mode:raw.game_mode, picks_bans:Array.isArray(raw.picks_bans) ? raw.picks_bans : null,
+      replacements.set(match.match_id, {...match, picks_bans:Array.isArray(raw.picks_bans) ? raw.picks_bans : null,
         draft_checked_at:new Date().toISOString() });
       console.log(`Checked draft ${match.match_id}: ${draftBans(raw) ? "available" : "unavailable"}`);
     } catch (error) {

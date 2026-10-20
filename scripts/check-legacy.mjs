@@ -5,6 +5,10 @@ import vm from "node:vm";
 import { buildHeroStats } from "../public/hero-stats.mjs";
 
 const seed = JSON.parse(await readFile(new URL('../public/data/opendota_league_18113_seed.json',import.meta.url),'utf8'));
+const originalSeed = JSON.parse(execFileSync('git',['show','0b739e3:public/data/opendota_league_18113_seed.json'],{encoding:'utf8',maxBuffer:50000000}));
+const currentMatches = new Map(seed.matches.map(match => [match.match_id,match]));
+const withoutDraft = ({picks_bans,draft_checked_at,...match}) => match;
+for (const match of originalSeed.matches) assert.deepEqual(withoutDraft(currentMatches.get(match.match_id)),withoutDraft(match),'Historical records may only gain BP fields');
 const previous = execFileSync('git',['show','0b739e3:public/static-data.js'],{encoding:'utf8'});
 const current = await readFile(new URL('../public/static-data.js',import.meta.url),'utf8');
 async function backend(source) {
