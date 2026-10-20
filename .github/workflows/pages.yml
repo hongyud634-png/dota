@@ -5,12 +5,8 @@ on:
     branches:
       - main
   workflow_dispatch:
-  schedule:
-    # Every hour at minute 17 (Asia/Shanghai has no daylight saving time).
-    - cron: "17 * * * *"
 
 permissions:
-  actions: write
   contents: write
   pages: write
 
@@ -31,14 +27,6 @@ jobs:
         with:
           node-version: 22
 
-      - name: Re-register scheduled workflow
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh api --method PUT "repos/$GITHUB_REPOSITORY/actions/workflows/hourly-refresh.yml/disable"
-          gh api --method PUT "repos/$GITHUB_REPOSITORY/actions/workflows/hourly-refresh.yml/enable"
-          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/hourly-refresh.yml" --jq '{id, state, path}'
-
       - name: Check data update and filtering
         run: |
           node scripts/check-data.mjs
@@ -47,12 +35,7 @@ jobs:
           node scripts/check-ranking.mjs
 
       - name: Update complete league data
-        run: |
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            node scripts/update-data.mjs
-          else
-            node scripts/update-data.mjs --backfill-all
-          fi
+        run: node scripts/update-data.mjs --backfill-all
 
       - name: Save updated data
         run: |

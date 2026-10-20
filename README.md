@@ -21,7 +21,7 @@ Cloudflare 版本使用 `wrangler.jsonc` 和 `src/worker.mjs`，不需要绑定�
 
 ## 部署到 GitHub Pages
 
-本仓库包含 GitHub Actions workflow：`.github/workflows/pages.yml`。推送到 `main` 后会自动发布 `public/` 目录。
+本仓库的 `.github/workflows/pages.yml` 负责推送到 `main` 后及手动发布；`.github/workflows/hourly-refresh.yml` 负责定时刷新。两者均发布 `public/` 目录到现有 Pages 分支，并共用发布锁。
 
 每小时第 17 分钟自动执行：从 OpenDota 获取联赛比赛列表、补齐全部缺失的比赛明细、保存数据并发布到同一个 GitHub Pages 地址。定时任务可能受 GitHub 调度影响而延迟。也可在 Actions 中手动运行 Deploy GitHub Pages。页面检测到数据超过两小时未更新时会自动补齐；失败后至少等待五分钟再自动重试。
 
