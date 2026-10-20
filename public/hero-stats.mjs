@@ -1,7 +1,7 @@
 // A missing or conflicting draft must not be counted as a game with zero bans.
-export function draftBans(match) {
+export function draftBans(match, heroes = new Map()) {
   const draft = match.picks_bans;
-  if (!Array.isArray(draft) || draft.some(p => typeof p.is_pick !== "boolean" || !Number.isInteger(p.hero_id) || p.hero_id <= 0 || ![0, 1].includes(p.team))) return null;
+  if (!Array.isArray(draft) || draft.some(p => !p || typeof p.is_pick !== "boolean" || !Number.isInteger(p.hero_id) || p.hero_id <= 0 || (heroes.size && !heroes.has(p.hero_id)) || ![0, 1].includes(p.team))) return null;
   const picks = draft.filter(p => p.is_pick);
   const bans = new Set(draft.filter(p => !p.is_pick).map(p => p.hero_id));
   if (picks.length !== 10 || new Set(picks.map(p => p.hero_id)).size !== 10 || picks.filter(p => p.team === 0).length !== 5 || !bans.size || picks.some(p => bans.has(p.hero_id))) return null;
@@ -19,7 +19,7 @@ export function buildHeroStats(matches, names = new Map(), images = new Map()) {
   for (const match of matches) {
     const players = match.players;
     const valid = Array.isArray(players) && players.length === 10 && typeof match.radiant_win === "boolean"
-      && players.every(p => Number.isInteger(p.hero_id) && p.hero_id > 0)
+      && players.every(p => p && Number.isInteger(p.hero_id) && p.hero_id > 0 && (!names.size || names.has(p.hero_id)))
       && new Set(players.map(p => p.hero_id)).size === 10
       && new Set(players.map(p => p.player_slot)).size === 10
       && players.every(p => [0,1,2,3,4,128,129,130,131,132].includes(p.player_slot))
@@ -34,7 +34,7 @@ export function buildHeroStats(matches, names = new Map(), images = new Map()) {
         hero.losses += won ? 0 : 1;
       }
     }
-    const bans = draftBans(match);
+    const bans = draftBans(match, names);
     if (bans) {
       bpMatches++;
       for (const id of bans) get(id).banned_matches++;
