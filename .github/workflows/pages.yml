@@ -10,6 +10,7 @@ on:
     - cron: "17 * * * *"
 
 permissions:
+  actions: write
   contents: write
   pages: write
 
@@ -29,6 +30,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Re-register scheduled workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/actions/workflows/hourly-refresh.yml/disable"
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/actions/workflows/hourly-refresh.yml/enable"
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/hourly-refresh.yml" --jq '{id, state, path}'
 
       - name: Check data update and filtering
         run: |
