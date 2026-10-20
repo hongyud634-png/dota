@@ -5,7 +5,7 @@ on:
   schedule:
     - cron: "17 * * * *"
     # Temporary schedule-registration check; remove after a real scheduled publish.
-    - cron: "*/5 * * * *"
+    - cron: "2/5 * * * *"
 
 permissions:
   contents: write
