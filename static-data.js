@@ -23,6 +23,9 @@
     lastAutoSyncAttemptAt: null,
     syncPromise: null,
     syncProgress: "",
+    seedVersion: null,
+    lastSeedCheckAt: 0,
+    seedCheckPromise: null,
   };
 
   const metricRanking = [
@@ -131,7 +134,7 @@
     return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${shortName}.png`;
   }
 
-  async function fetchJson(url, { retries = 3, timeoutMs = 25000 } = {}) {
+  async function fetchJson(url, { retries = 3, timeoutMs = 25000, onResponse } = {}) {
     let lastError;
     for (let attempt = 1; attempt <= retries; attempt += 1) {
       const controller = new AbortController();
@@ -145,6 +148,7 @@
           continue;
         }
         if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+        onResponse?.(response);
         return await response.json();
       } catch (error) {
         clearTimeout(timer);
@@ -186,13 +190,45 @@
   async function init() {
     if (state.initialized) return;
     if (!state.initPromise) {
-      state.initPromise = Promise.all([fetchJson(dataUrl(), { retries: 2, timeoutMs: 45000 }), window.heroStatsReady]).then(([seedData, heroModule]) => {
+      state.initPromise = Promise.all([fetchJson(dataUrl(), { retries: 2, timeoutMs: 45000,
+        onResponse: response => { state.seedVersion = response.headers?.get("etag") || response.headers?.get("last-modified"); },
+      }), window.heroStatsReady]).then(([seedData, heroModule]) => {
         buildHeroStats = heroModule.buildHeroStats;
         loadSeed(seedData);
         state.initialized = true;
+        state.lastSeedCheckAt = Date.now();
       });
     }
     await state.initPromise;
+  }
+
+  async function refreshPublishedData() {
+    if (state.seedCheckPromise) return state.seedCheckPromise;
+    if (Date.now() - state.lastSeedCheckAt < 5 * 60 * 1000) return;
+    state.lastSeedCheckAt = Date.now();
+    state.seedCheckPromise = (async () => {
+      try {
+        const response = await fetch(dataUrl(), {method:"HEAD", cache:"no-store", signal:AbortSignal.timeout(10000)});
+        const version = response.headers?.get("etag") || response.headers?.get("last-modified");
+        if (!response.ok || !version || version === state.seedVersion) return;
+        const seed = await fetchJson(dataUrl(), {timeoutMs:45000});
+        // Merge the new published BP records without dropping locally fetched games.
+        for (const match of seed.matches ?? []) {
+          if (Number(match.leagueid) === CONFIG.leagueId) state.matchesById.set(Number(match.match_id), {...state.matchesById.get(Number(match.match_id)), ...match});
+        }
+        state.matchIds = [...new Set([...state.matchIds, ...(seed.matchIds ?? []).map(Number)])];
+        const publishedAt = Date.parse(seed.generatedAt) || 0;
+        if (publishedAt > state.lastSyncEpoch) {
+          state.lastSyncEpoch = publishedAt;
+          state.lastSyncFinishedAt = toBeijingString(publishedAt / 1000);
+          state.lastError = null;
+        }
+        state.seedVersion = version;
+      } catch {
+        // The OpenDota fallback below still runs when the published file is stale.
+      }
+    })().finally(() => { state.seedCheckPromise = null; });
+    return state.seedCheckPromise;
   }
 
   async function syncLatest(onProgress) {
@@ -229,6 +265,7 @@
       state.lastSyncFinishedAt = isoBeijingNow();
       state.lastSyncEpoch = Date.now();
     } catch (error) {
+      state.lastAutoSyncAttemptAt = Date.now();
       state.lastError = `静态模式同步失败：${error?.message ?? String(error)}`;
     } finally {
       state.isSyncing = false;
@@ -484,6 +521,7 @@
 
   async function dashboard(options = {}) {
     await init();
+    if (options.autoRefresh) await refreshPublishedData();
     const stale = Date.now() - state.lastSyncEpoch > 2 * 60 * 60 * 1000;
     const mayRetry = state.lastAutoSyncAttemptAt === null || Date.now() - state.lastAutoSyncAttemptAt >= 5 * 60 * 1000;
     if (state.syncPromise) await state.syncPromise;
