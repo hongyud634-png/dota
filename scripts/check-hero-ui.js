@@ -37,5 +37,19 @@ async (page) => {
   await page.locator('#clearDatesButton').click();
   await page.waitForFunction(()=>!appState.loading&&appState.data.league.date_end==='');
   await page.locator('#heroMetricSelect').selectOption('win_rate');
+  const ids = await page.evaluate(async () => (await (await fetch('data/opendota_league_18113_seed.json')).json()).matchIds);
+  let release;
+  const gate = new Promise(resolve => {release=resolve;});
+  await page.route('https://api.opendota.com/api/leagues/18113/matchIds',async route => {await gate;await route.fulfill({json:ids});});
+  await page.locator('#syncButton').click();
+  await page.waitForFunction(()=>appState.loading);
+  await page.locator('#startDate').fill('2026-05-01');
+  await page.locator('#endDate').fill('2026-05-31');
+  release();
+  await page.waitForFunction(()=>!appState.loading&&appState.data.league.date_end==='2026-05-31');
+  check(await page.evaluate(()=>appState.data.hero_coverage.total_matches===91),'Changing dates during sync must preserve the latest selection');
+  await page.unroute('https://api.opendota.com/api/leagues/18113/matchIds');
+  await page.locator('#clearDatesButton').click();
+  await page.waitForFunction(()=>!appState.loading&&appState.data.league.date_end==='');
   return {passed:true,coverage,metrics:3,viewports:[1440,820,390],checks:'three formulas, date scope, 0/1/2/3/10 heroes, missing images, long names, no NaN or overflow'};
 }
