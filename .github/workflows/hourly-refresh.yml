@@ -4,8 +4,6 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "17 * * * *"
-    # Temporary schedule-registration check; remove after a real scheduled publish.
-    - cron: "2/5 * * * *"
 
 permissions:
   contents: write

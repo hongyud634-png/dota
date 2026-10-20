@@ -25,6 +25,8 @@ Cloudflare 版本使用 `wrangler.jsonc` 和 `src/worker.mjs`，不需要绑定�
 
 每小时第 17 分钟自动执行：从 OpenDota 获取联赛比赛列表、补齐全部缺失的比赛明细、保存数据并发布到同一个 GitHub Pages 地址。定时任务可能受 GitHub 调度影响而延迟。也可在 Actions 中手动运行 Deploy GitHub Pages。页面检测到数据超过两小时未更新时会自动补齐；失败后至少等待五分钟再自动重试。
 
+后台排程验收须同时核对 `schedule` 触发记录及其后的 Pages 发布成功，推送或手动触发成功不能替代定时验证。
+
 `node scripts/update-data.mjs` 可在本地更新数据。抓取失败时脚本不会写入数据，线上继续使用上次成功发布的版本。页面默认展示全联赛，日期筛选只影响统计范围；“同步最新”可获取当天后台更新后新增的比赛。状态栏显示数据实际更新时间。
 
 历史 BP 每批补取最多 50 场，只补充 BP 字段，不替换原有玩家记录。`node scripts/update-data.mjs --backfill-all` 连续补取缺少的历史 BP；无可用记录的比赛每天最多重查一次，网络失败留待后续重试。
