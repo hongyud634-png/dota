@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>OpenDota 联赛实时数据</title>
     <link rel="icon" type="image/png" href="assets/boxing-logo.png" />
-    <link rel="stylesheet" href="styles.css?v=dark-podium-1" />
+    <link rel="stylesheet" href="styles.css?v=hero-rank-1" />
+    <script>window.heroStatsReady = import("./hero-stats.mjs?v=hero-rank-1");</script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
-    <script src="static-data.js?v=daily-data-1" defer></script>
-    <script src="app.js?v=dark-podium-1" defer></script>
+    <script src="static-data.js?v=hero-rank-1" defer></script>
+    <script src="app.js?v=hero-rank-1" defer></script>
   </head>
   <body>
     <section id="loginView" class="login-view">
@@ -86,6 +87,22 @@
           </div>
           <div id="recentMatches" class="match-list"></div>
         </div>
+      </section>
+
+      <section class="panel hero-panel" aria-label="英雄排行">
+        <div class="panel-head">
+          <div>
+            <h2>英雄排行</h2>
+            <p id="heroRankingHint">正在读取英雄统计</p>
+          </div>
+          <select id="heroMetricSelect" aria-label="英雄排行指标">
+            <option value="win_rate">英雄胜率</option>
+            <option value="ban_rate">英雄 Ban 率</option>
+            <option value="pick_rate">英雄选取率</option>
+          </select>
+        </div>
+        <p id="heroCoverage" class="hero-coverage"></p>
+        <div id="heroRankingList" class="ranking-list"></div>
       </section>
 
       <section class="panel table-panel">

@@ -1,4 +1,5 @@
 (function () {
+  let buildHeroStats;
   const CONFIG = {
     leagueId: 18113,
     leagueName: "鹏辉产业园第三届AMER讲伍德比赛",
@@ -18,6 +19,10 @@
     lastSyncStartedAt: null,
     lastSyncFinishedAt: null,
     lastError: null,
+    lastSyncEpoch: 0,
+    lastAutoSyncAttemptAt: null,
+    syncPromise: null,
+    syncProgress: "",
   };
 
   const metricRanking = [
@@ -175,12 +180,14 @@
     state.lastSyncFinishedAt = seedData.generatedAt
       ? toBeijingString(Date.parse(seedData.generatedAt) / 1000)
       : null;
+    state.lastSyncEpoch = Date.parse(seedData.generatedAt) || 0;
   }
 
   async function init() {
     if (state.initialized) return;
     if (!state.initPromise) {
-      state.initPromise = fetchJson(dataUrl(), { retries: 2, timeoutMs: 20000 }).then((seedData) => {
+      state.initPromise = Promise.all([fetchJson(dataUrl(), { retries: 2, timeoutMs: 45000 }), window.heroStatsReady]).then(([seedData, heroModule]) => {
+        buildHeroStats = heroModule.buildHeroStats;
         loadSeed(seedData);
         state.initialized = true;
       });
@@ -188,11 +195,15 @@
     await state.initPromise;
   }
 
-  async function syncLatest() {
-    if (state.isSyncing) return;
+  async function syncLatest(onProgress) {
+    if (state.syncPromise) return state.syncPromise;
+    state.syncPromise = (async () => {
     state.isSyncing = true;
+    state.lastAutoSyncAttemptAt = Date.now();
     state.lastSyncStartedAt = isoBeijingNow();
     state.lastError = null;
+    state.syncProgress = "正在核对最新比赛…";
+    onProgress?.(state.syncProgress);
     try {
       const ids = await fetchJson(`${CONFIG.apiBase}/leagues/${CONFIG.leagueId}/matchIds`);
       if (!Array.isArray(ids) || ids.length === 0 || ids.some((id) => !Number.isSafeInteger(Number(id)) || Number(id) <= 0)) {
@@ -203,20 +214,28 @@
       const missing = numericIds
         .filter((id) => !state.matchesById.has(Number(id)))
         .sort((a, b) => b - a);
+      let completed = 0;
       for (const matchId of missing) {
+        state.syncProgress = `正在补齐比赛 ${completed} / ${missing.length}…`;
+        onProgress?.(state.syncProgress);
         const match = await fetchJson(`${CONFIG.apiBase}/matches/${matchId}`);
         if (Number(match.match_id) !== matchId || Number(match.leagueid) !== CONFIG.leagueId || !Array.isArray(match.players) || match.players.length === 0) {
           throw new Error(`比赛 ${matchId} 明细不完整`);
         }
         state.matchesById.set(Number(match.match_id), match);
+        completed++;
         await sleep(1250);
       }
       state.lastSyncFinishedAt = isoBeijingNow();
+      state.lastSyncEpoch = Date.now();
     } catch (error) {
       state.lastError = `静态模式同步失败：${error?.message ?? String(error)}`;
     } finally {
       state.isSyncing = false;
+      state.syncProgress = "";
     }
+    })().finally(() => { state.syncPromise = null; });
+    return state.syncPromise;
   }
 
   function topHeroes(heroCounts) {
@@ -404,6 +423,7 @@
 
     const latestMatch = matches.at(-1);
     return {
+      ...buildHeroStats(matches, state.heroesById, state.heroImagesById),
       league: {
         id: CONFIG.leagueId,
         name: CONFIG.leagueName,
@@ -418,6 +438,8 @@
         last_sync_finished_at: state.lastSyncFinishedAt,
         is_syncing: state.isSyncing,
         last_error: state.lastError,
+        data_stale: Date.now() - state.lastSyncEpoch > 2 * 60 * 60 * 1000,
+        sync_progress: state.syncProgress,
         total_match_ids: state.matchIds.length,
         included_matches: matches.length,
         player_rows: playerRows.length,
@@ -462,7 +484,10 @@
 
   async function dashboard(options = {}) {
     await init();
-    if (options.refresh) await syncLatest();
+    const stale = Date.now() - state.lastSyncEpoch > 2 * 60 * 60 * 1000;
+    const mayRetry = state.lastAutoSyncAttemptAt === null || Date.now() - state.lastAutoSyncAttemptAt >= 5 * 60 * 1000;
+    if (state.syncPromise) await state.syncPromise;
+    else if (options.refresh || (options.autoRefresh && stale && mayRetry)) await syncLatest(options.onProgress);
     return buildDataset(options);
   }
 
