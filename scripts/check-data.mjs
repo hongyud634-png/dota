@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 import { updateData } from "./update-data.mjs";
 import { buildHeroStats } from "../public/hero-stats.mjs";
+import { buildMatchRecords } from "../public/match-records.mjs";
 
 const match = (id, date = "2026-10-01") => ({
   match_id: id, leagueid: 18113, start_time: Date.parse(`${date}T12:00:00+08:00`) / 1000,
@@ -27,7 +28,7 @@ const retained = await updateData(updated, async () => [1], async () => {});
 assert.equal(retained.matches.length, 23, "temporary upstream omissions must not delete published matches");
 
 const context = vm.createContext({
-  window: {heroStatsReady:Promise.resolve({buildHeroStats})}, document: { baseURI: "https://example.com/dota/" }, URL,
+  window: {heroStatsReady:Promise.resolve({buildHeroStats}),matchRecordsReady:Promise.resolve({buildMatchRecords})}, document: { baseURI: "https://example.com/dota/" }, URL,
   AbortController, setTimeout: (fn) => { queueMicrotask(fn); return 0; }, clearTimeout() {},
   fetch: async (url) => ({ ok: true, status: 200, json: async () =>
     url.includes("seed.json") ? structuredClone(seed) : url.includes("matchIds") ? ids : match(Number(url.split("/").at(-1))) }),

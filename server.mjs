@@ -4,6 +4,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { buildHeroStats } from "./public/hero-stats.mjs";
+import { buildMatchRecords } from "./public/match-records.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "public");
@@ -483,6 +484,7 @@ function buildDataset(filters = {}) {
   const latestMatch = matches.at(-1);
   return {
     ...buildHeroStats(matches, state.heroesById, state.heroImagesById),
+    ...buildMatchRecords(matches, state.heroesById, state.heroImagesById),
     league: {
       id: CONFIG.leagueId,
       name: CONFIG.leagueName,

@@ -28,6 +28,7 @@ jobs:
           node scripts/check-heroes.mjs
           node scripts/check-auto-sync.mjs
           node scripts/check-ranking.mjs
+          node scripts/check-records.mjs
       - name: Refresh league data and draft coverage
         run: node scripts/update-data.mjs
       - name: Save and publish updated data

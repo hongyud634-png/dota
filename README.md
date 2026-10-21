@@ -35,6 +35,8 @@ Cloudflare 版本使用 `wrangler.jsonc` 和 `src/worker.mjs`，不需要绑定�
 
 数据与回归检查：`node scripts/check-data.mjs`、`node scripts/check-heroes.mjs`、`node scripts/check-auto-sync.mjs`、`node scripts/check-ranking.mjs`。`scripts/check-ui.js` 和 `scripts/check-hero-ui.js` 可通过 Playwright CLI 的 `run-code --filename` 在已打开的页面中执行。
 
+单场纪录模块展示击杀、死亡、助攻、补刀、反补、GPM、XPM、经济、英雄伤害、塔伤、治疗和 KDA 的最高三条个人单场表现，随日期筛选更新，并提供记录保持者、英雄、数值、比赛时间和比赛链接。同一玩家可占多席，同值按比赛时间、比赛 ID、玩家位置先后排列；缺失或异常数值不参与。KDA 沿用 `(kills + assists) / max(deaths, 1)`。`node scripts/check-records.mjs` 检查该统计口径。
+
 GitHub Pages 静态版不依赖后端 API；如果 `/api` 不可用，前端会自动切到浏览器本地数据模式，读取 `public/data/opendota_league_18113_seed.json`。
 
 ## 部署到 Render

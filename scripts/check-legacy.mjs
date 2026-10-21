@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 import { buildHeroStats } from "../public/hero-stats.mjs";
+import { buildMatchRecords } from "../public/match-records.mjs";
 
 const seed = JSON.parse(await readFile(new URL('../public/data/opendota_league_18113_seed.json',import.meta.url),'utf8'));
 const originalSeed = JSON.parse(execFileSync('git',['show','0b739e3:public/data/opendota_league_18113_seed.json'],{encoding:'utf8',maxBuffer:50000000}));
@@ -12,7 +13,7 @@ for (const match of originalSeed.matches) assert.deepEqual(withoutDraft(currentM
 const previous = execFileSync('git',['show','0b739e3:public/static-data.js'],{encoding:'utf8'});
 const current = await readFile(new URL('../public/static-data.js',import.meta.url),'utf8');
 async function backend(source) {
-  const context = vm.createContext({window:{heroStatsReady:Promise.resolve({buildHeroStats})},document:{baseURI:'https://example.com/dota/'},
+  const context = vm.createContext({window:{heroStatsReady:Promise.resolve({buildHeroStats}),matchRecordsReady:Promise.resolve({buildMatchRecords})},document:{baseURI:'https://example.com/dota/'},
     URL,AbortController,setTimeout,clearTimeout,fetch:async()=>({ok:true,status:200,json:async()=>seed})});
   vm.runInContext(source,context);
   return context.window.StaticBackend;
@@ -22,6 +23,7 @@ for (const filters of [{},{startDate:'2026-05-01',endDate:'2026-05-31'},{startDa
   const a = JSON.parse(JSON.stringify(await old.dashboard(filters)));
   const b = JSON.parse(JSON.stringify(await updated.dashboard(filters)));
   delete b.hero_stats; delete b.hero_rankings; delete b.hero_coverage;
+  delete b.match_records;
   delete b.league.data_stale; delete b.league.sync_progress;
   delete a.league.generated_at; delete b.league.generated_at;
   assert.deepEqual(b,a,'Existing player statistics, rankings, coverage and matches must remain identical');
