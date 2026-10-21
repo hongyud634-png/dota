@@ -5,12 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>OpenDota 联赛实时数据</title>
     <link rel="icon" type="image/png" href="assets/boxing-logo.png" />
-    <link rel="stylesheet" href="styles.css?v=records-1" />
+    <link rel="stylesheet" href="styles.css?v=advanced-1" />
+    <link rel="stylesheet" href="advanced.css?v=advanced-1" />
     <script>window.heroStatsReady = import("./hero-stats.mjs?v=hero-rank-2");</script>
     <script>window.matchRecordsReady = import("./match-records.mjs?v=records-1");</script>
+    <script>window.advancedStatsReady = import("./advanced-stats.mjs?v=advanced-1");</script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
-    <script src="static-data.js?v=records-1" defer></script>
-    <script src="app.js?v=records-1" defer></script>
+    <script src="static-data.js?v=advanced-1" defer></script>
+    <script src="advanced-ui.js?v=advanced-1" defer></script>
+    <script src="app.js?v=advanced-1" defer></script>
   </head>
   <body>
     <section id="loginView" class="login-view">
@@ -64,10 +67,11 @@
     </header>
 
     <main id="appMain" class="hidden">
-      <section class="kpi-grid" id="kpiGrid" aria-label="核心指标"></section>
+      <nav id="moduleTabs" class="module-tabs" role="tablist" aria-label="数据模块"></nav>
+      <p class="mobile-tab-hint">左右滑动页签，查看其他模块</p>
+      <section class="kpi-grid" id="kpiGrid" data-page="overview" data-title="概览" role="tabpanel" aria-label="核心指标"></section>
 
-      <section class="overview-grid">
-        <div class="panel ranking-panel">
+      <section class="panel ranking-panel" data-page="ranking" data-title="指标排行" role="tabpanel" hidden>
           <div class="panel-head">
             <div>
               <h2>指标排行</h2>
@@ -76,9 +80,9 @@
             <select id="metricSelect" aria-label="选择排行指标"></select>
           </div>
           <div id="rankingList" class="ranking-list"></div>
-        </div>
+      </section>
 
-        <div class="panel matches-panel">
+      <section class="panel matches-panel" data-page="recent" data-title="最近比赛" role="tabpanel" hidden>
           <div class="panel-head">
             <div>
               <h2>最近比赛</h2>
@@ -87,10 +91,9 @@
             <a id="leagueLink" class="text-link" target="_blank" rel="noreferrer">OpenDota</a>
           </div>
           <div id="recentMatches" class="match-list"></div>
-        </div>
       </section>
 
-      <section class="panel hero-panel" aria-label="英雄排行">
+      <section class="panel hero-panel" data-page="heroes" data-title="英雄排行" role="tabpanel" aria-label="英雄排行" hidden>
         <div class="panel-head">
           <div>
             <h2>英雄排行</h2>
@@ -106,7 +109,7 @@
         <div id="heroRankingList" class="ranking-list"></div>
       </section>
 
-      <section class="panel" aria-label="单场纪录 Top 3">
+      <section class="panel" data-page="records" data-title="单场纪录" role="tabpanel" aria-label="单场纪录 Top 3" hidden>
         <div class="panel-head">
           <div>
             <h2>单场纪录 Top 3</h2>
@@ -117,7 +120,35 @@
         <div id="matchRecords" class="records-grid"></div>
       </section>
 
-      <section class="panel table-panel">
+      <section class="panel" data-page="contribution" data-title="团队贡献" role="tabpanel" hidden>
+        <div class="panel-head"><div><h2>团队贡献</h2><p>每位玩家的逐场贡献，展示当前指标 Top 10</p></div><select id="contributionMetric" aria-label="团队贡献指标"></select></div>
+        <p id="contributionCoverage" class="hero-coverage"></p>
+        <p id="contributionFormula" class="advanced-note"></p>
+        <div id="contributionRanking" class="advanced-ranking"></div>
+      </section>
+
+      <section class="panel" data-page="support" data-title="辅助贡献" role="tabpanel" hidden>
+        <div class="panel-head"><div><h2>辅助贡献</h2><p>眼位、排眼、堆野、控符和控制；显示当前指标 Top 10</p></div><select id="supportMetric" aria-label="辅助贡献指标"></select></div>
+        <p id="supportCoverage" class="hero-coverage"></p>
+        <p id="supportFormula" class="advanced-note"></p>
+        <div id="supportRanking" class="advanced-ranking"></div>
+      </section>
+
+      <section class="panel" data-page="laning" data-title="对线表现" role="tabpanel" hidden>
+        <div class="panel-head"><div><h2>对线表现</h2><p>按英雄与对线路线筛选，展示当前指标 Top 10</p></div><select id="laningMetric" aria-label="对线表现指标"></select></div>
+        <div class="advanced-filters"><label>英雄<select id="laneHero" aria-label="对线英雄筛选"><option value="">全部英雄</option></select></label><label>路线<select id="laneRole" aria-label="对线路线筛选"><option value="">全部路线</option><option value="1">优势路</option><option value="2">中路</option><option value="3">劣势路</option><option value="4">野区</option></select></label></div>
+        <p id="laningCoverage" class="hero-coverage"></p>
+        <p id="laningFormula" class="advanced-note"></p>
+        <div id="laningRanking" class="advanced-ranking"></div>
+      </section>
+
+      <section class="panel" data-page="review" data-title="比赛复盘" role="tabpanel" hidden>
+        <div class="panel-head"><div><h2>比赛复盘</h2><p>经济经验走势、关键装备、团战与目标事件</p></div><select id="reviewMatchSelect" aria-label="选择复盘比赛"></select></div>
+        <p id="reviewStatus" class="hero-coverage">请选择比赛</p>
+        <div id="reviewContent"></div>
+      </section>
+
+      <section class="panel table-panel" data-page="players" data-title="玩家均值" role="tabpanel" hidden>
         <div class="panel-head">
           <div>
             <h2>玩家均值</h2>
@@ -176,7 +207,7 @@
         </div>
       </section>
 
-      <section class="panel table-panel">
+      <section class="panel table-panel" data-page="matches" data-title="比赛明细" role="tabpanel" hidden>
         <div class="panel-head">
           <div>
             <h2>比赛明细</h2>

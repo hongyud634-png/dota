@@ -1,6 +1,7 @@
 import seedData from "../seed/opendota_league_18113_seed.json" with { type: "json" };
 import { buildHeroStats } from "../public/hero-stats.mjs";
 import { buildMatchRecords } from "../public/match-records.mjs";
+import { buildAdvancedStats } from "../public/advanced-stats.mjs";
 
 const CONFIG = {
   leagueId: 18113,
@@ -428,6 +429,7 @@ function buildDataset(filters = {}) {
   return {
     ...buildHeroStats(matches, state.heroesById, state.heroImagesById),
     ...buildMatchRecords(matches, state.heroesById, state.heroImagesById),
+    ...buildAdvancedStats(matches, state.heroesById, state.heroImagesById),
     league: {
       id: CONFIG.leagueId,
       name: CONFIG.leagueName,

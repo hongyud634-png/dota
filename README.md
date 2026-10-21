@@ -37,6 +37,16 @@ Cloudflare 版本使用 `wrangler.jsonc` 和 `src/worker.mjs`，不需要绑定�
 
 单场纪录模块展示击杀、死亡、助攻、补刀、反补、GPM、XPM、经济、英雄伤害、塔伤、治疗和 KDA 的最高三条个人单场表现，随日期筛选更新，并提供记录保持者、英雄、数值、比赛时间和比赛链接。同一玩家可占多席，同值按比赛时间、比赛 ID、玩家位置先后排列；缺失或异常数值不参与。KDA 沿用 `(kills + assists) / max(deaths, 1)`。`node scripts/check-records.mjs` 检查该统计口径。
 
+## 页签与高阶统计
+
+界面按概览、指标排行、最近比赛、英雄排行、单场纪录、团队贡献、辅助贡献、对线表现、比赛复盘、玩家均值和比赛明细分为 11 个页签，每次只展示一个模块。公共日期筛选和同步按钮对所有页签生效；模块可通过 URL 的 `#contribution`、`#review` 等片段直接打开，支持键盘左右键、Home、End 切换。
+
+团队贡献包含击杀参与率、伤害／塔伤／治疗占比和每分钟伤害／治疗。比例为有效比赛的逐场比例均值，零分母不参与；每分钟指标为有效比赛总数值除以总分钟数。辅助贡献包含假眼、真眼、排眼、堆野、控符和累计控制时间。对线表现支持按英雄、路线筛选，使用准确的 600 秒采样点及 OpenDota 对线效率；缺失值不作零处理。每项单独列出有效比赛数和每位玩家的有效场次，新指标不套用原有玩家榜的 3% 门槛，原有榜单口径保持不变。
+
+`scripts/update-analysis.mjs` 每次最多补取 50 场；`--all` 首次连续补取，单次最多使用 20 分钟。已解析记录复用缓存，无解析记录每天最多复查一次，网络失败后续重试。新数据仅写入原比赛的 `analysis`、`analysis_checked_at` 补充字段，不覆盖原始玩家和胜负数据。`public/data/analysis/<match_id>.json` 单独保存每场的曲线、关键装备日志、团战和目标事件，进入复盘页签后按需加载；未发布的新比赛可从 OpenDota 只读补取。后台发布与每小时更新同时维护这些文件。
+
+`public/advanced-stats.mjs` 由浏览器、Node 和 Worker 复用，新增响应字段 `advanced_stats`；原有字段保持兼容。`node scripts/check-advanced.mjs` 检查统计口径、补取及复盘映射，`scripts/check-modules.js` 可通过 Playwright CLI 检查页签、18 项新指标、日期范围、空状态和桌面／平板／390px 布局。
+
 GitHub Pages 静态版不依赖后端 API；如果 `/api` 不可用，前端会自动切到浏览器本地数据模式，读取 `public/data/opendota_league_18113_seed.json`。
 
 ## 部署到 Render

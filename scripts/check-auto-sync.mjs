@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 import { buildHeroStats } from "../public/hero-stats.mjs";
 import { buildMatchRecords } from "../public/match-records.mjs";
+import { buildAdvancedStats } from "../public/advanced-stats.mjs";
 
 let now = Date.parse("2026-10-20T04:00:00Z");
 class Clock extends Date {
@@ -17,7 +18,7 @@ let version = 'v1';
 let listRequests=0;
 let fail=false;
 const context = vm.createContext({
-  window:{heroStatsReady:Promise.resolve({buildHeroStats}),matchRecordsReady:Promise.resolve({buildMatchRecords})},document:{baseURI:'https://example.com/dota/'},Date:Clock,URL,AbortController,AbortSignal,
+  window:{heroStatsReady:Promise.resolve({buildHeroStats}),matchRecordsReady:Promise.resolve({buildMatchRecords}),advancedStatsReady:Promise.resolve({buildAdvancedStats})},document:{baseURI:'https://example.com/dota/'},Date:Clock,URL,AbortController,AbortSignal,
   setTimeout:(fn,delay)=>{if(delay<20000)queueMicrotask(fn);return 0;},clearTimeout(){},
   fetch:async url=>{
     if(url.includes('matchIds')) { listRequests++; if(fail){now+=100000;throw Error('offline');} }

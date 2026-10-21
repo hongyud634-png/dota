@@ -29,13 +29,16 @@ jobs:
           node scripts/check-auto-sync.mjs
           node scripts/check-ranking.mjs
           node scripts/check-records.mjs
+          node scripts/check-advanced.mjs
       - name: Refresh league data and draft coverage
         run: node scripts/update-data.mjs
+      - name: Supplement advanced analysis and review files
+        run: node scripts/update-analysis.mjs
       - name: Save and publish updated data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/data/opendota_league_18113_seed.json seed/opendota_league_18113_seed.json
+          git add public/data seed/opendota_league_18113_seed.json
           if ! git diff --cached --quiet; then
             git commit -m "Hourly league data update"
             git push

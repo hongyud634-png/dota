@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { buildHeroStats } from "./public/hero-stats.mjs";
 import { buildMatchRecords } from "./public/match-records.mjs";
+import { buildAdvancedStats } from "./public/advanced-stats.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "public");
@@ -248,6 +249,12 @@ async function loadCachedMatches() {
         state.matchesById.set(Number(match.match_id), match);
       }
     }
+  } else {
+    const seed = await readSeedData();
+    for (const match of seed?.matches ?? []) {
+      const cached = state.matchesById.get(Number(match.match_id));
+      if(cached && match.analysis) state.matchesById.set(Number(match.match_id), {...cached,analysis:match.analysis,analysis_checked_at:match.analysis_checked_at});
+    }
   }
 }
 
@@ -485,6 +492,7 @@ function buildDataset(filters = {}) {
   return {
     ...buildHeroStats(matches, state.heroesById, state.heroImagesById),
     ...buildMatchRecords(matches, state.heroesById, state.heroImagesById),
+    ...buildAdvancedStats(matches, state.heroesById, state.heroImagesById),
     league: {
       id: CONFIG.leagueId,
       name: CONFIG.leagueName,

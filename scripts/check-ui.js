@@ -5,6 +5,7 @@ async (page) => {
     await page.getByRole('button', { name: '登录查看' }).click();
   }
   await page.waitForFunction(() => document.querySelectorAll('#rankingList .podium-place').length === 3);
+  await page.locator('#tab-ranking').click();
   const baseline = await page.evaluate(async () => {
     const original = await StaticBackend.dashboard();
     return {
@@ -47,11 +48,13 @@ async (page) => {
   await page.locator('#clearDatesButton').click();
   await page.waitForFunction(() => !appState.loading && appState.data.league.date_end === '');
   check(await page.evaluate(() => appState.data.league.included_matches) === baseline.matches, 'Clearing dates must restore all matches');
+  await page.locator('#tab-players').click();
   await page.locator('#playerSearch').fill('NO_SUCH_PLAYER_UI_CHECK');
   check(await page.locator('#playerTableBody tr').count() === 0, 'Search must filter rows');
   await page.locator('#playerSearch').fill('');
   await page.locator('#sortSelect').selectOption('avg_gold_per_min');
   check(await page.evaluate(() => document.querySelector('#playerTableBody tr td').textContent === String(sortedPlayers(appState.data)[0].account_id)), 'Player sorting differs');
+  await page.locator('#tab-matches').click();
   await page.locator('#matchFilter').selectOption('issues');
   check(await page.evaluate(() => document.querySelectorAll('#matchTableBody tr').length === Math.max(1,appState.data.issues.length)), 'Issue filter differs');
   await page.locator('#matchFilter').selectOption('recent');
@@ -66,6 +69,7 @@ async (page) => {
   await page.getByRole('textbox', { name:'你的昵称' }).fill('UI验证');
   await page.getByRole('button', { name:'登录查看' }).click();
   await page.waitForFunction(() => !document.getElementById('appMain').classList.contains('hidden') && !appState.loading);
+  await page.locator('#tab-ranking').click();
   const edgeCases = await page.evaluate(() => {
     for (const count of [0,1,2,3,10]) {
       const key = appState.metric;

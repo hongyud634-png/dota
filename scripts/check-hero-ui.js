@@ -1,6 +1,7 @@
 async (page) => {
   const check = (ok,message) => {if(!ok)throw Error(message);};
   await page.waitForFunction(() => appState.data?.hero_coverage);
+  await page.locator('#tab-heroes').click();
   const coverage = await page.evaluate(() => appState.data.hero_coverage);
   for (const metric of ['win_rate','ban_rate','pick_rate']) {
     await page.locator('#heroMetricSelect').selectOption(metric);
