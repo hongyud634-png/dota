@@ -5,25 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>OpenDota 联赛实时数据</title>
     <link rel="icon" type="image/png" href="assets/boxing-logo.png" />
-    <link rel="stylesheet" href="styles.css?v=advanced-1" />
-    <link rel="stylesheet" href="advanced.css?v=advanced-1" />
+    <link rel="stylesheet" href="styles.css?v=loading-1" />
+    <link rel="stylesheet" href="advanced.css?v=loading-1" />
     <script>window.heroStatsReady = import("./hero-stats.mjs?v=hero-rank-2");</script>
     <script>window.matchRecordsReady = import("./match-records.mjs?v=records-1");</script>
-    <script>window.advancedStatsReady = import("./advanced-stats.mjs?v=advanced-1");</script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
-    <script src="static-data.js?v=advanced-1" defer></script>
-    <script src="advanced-ui.js?v=advanced-1" defer></script>
-    <script src="app.js?v=advanced-1" defer></script>
+    <script>window.advancedStatsReady = import("./advanced-stats.mjs?v=loading-1");</script>
+    <script src="static-data.js?v=loading-1" defer></script>
+    <script src="advanced-ui.js?v=loading-1" defer></script>
+    <script src="app.js?v=loading-1" defer></script>
   </head>
   <body>
     <section id="loginView" class="login-view">
       <form id="loginForm" class="login-panel">
-        <img class="brand-mark" src="assets/boxing-logo.png" alt="内战数据 Logo" width="88" height="88" />
+        <img class="brand-mark" src="assets/boxing-logo.png" alt="内战数据 Logo" decoding="async" fetchpriority="low" width="88" height="88" />
         <h1>鹏辉产业园第三届AMER讲伍德比赛</h1>
         <p>输入昵称即可查看实时联赛数据</p>
         <input id="loginName" type="text" maxlength="40" placeholder="你的昵称" autocomplete="name" />
         <button class="icon-button command" type="submit">
-          <i data-lucide="log-in"></i>
+          <svg class="lucide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6M3 12h12M15 3h5a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-5"/></svg>
           <span>登录查看</span>
         </button>
         <div id="loginError" class="login-error"></div>
@@ -32,7 +31,7 @@
 
     <header id="appHeader" class="topbar hidden">
       <div class="brand-block">
-        <img class="brand-mark" src="assets/boxing-logo.png" alt="内战数据 Logo" width="44" height="44" />
+        <img class="brand-mark" src="assets/boxing-logo.png" alt="内战数据 Logo" decoding="async" fetchpriority="low" width="44" height="44" />
         <div>
           <h1>鹏辉产业园第三届AMER讲伍德比赛</h1>
           <p id="statusLine">正在读取数据</p>
@@ -49,19 +48,19 @@
             <input id="endDate" type="date" />
           </label>
           <button id="clearDatesButton" class="icon-button ghost" title="清空日期筛选">
-            <i data-lucide="x"></i>
+            <svg class="lucide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg>
           </button>
         </div>
         <button id="syncButton" class="icon-button command" title="同步最新数据">
-          <i data-lucide="refresh-cw"></i>
+          <svg class="lucide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-1l2 6M4 12l2 6a7 7 0 0 0 12-1"/></svg>
           <span>同步最新</span>
         </button>
         <div class="user-chip">
-          <i data-lucide="user"></i>
+          <svg class="lucide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>
           <span id="currentUserName">-</span>
         </div>
         <button id="logoutButton" class="icon-button ghost" title="退出登录">
-          <i data-lucide="log-out"></i>
+          <svg class="lucide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3H4v18h5m6-15 6 6-6 6M9 12h12"/></svg>
         </button>
       </div>
     </header>
@@ -156,7 +155,7 @@
           </div>
           <div class="table-tools">
             <div class="searchbox">
-              <i data-lucide="search"></i>
+              <svg class="lucide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></svg>
               <input id="playerSearch" type="search" placeholder="搜索玩家ID或名称" />
             </div>
             <select id="sortSelect" aria-label="玩家表排序">
