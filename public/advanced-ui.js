@@ -1,6 +1,7 @@
 const advancedState = {page:"overview",metrics:{},laneHero:"",laneRole:"",reviewId:null,review:null,reviewKey:null,reviewCache:new Map(),fight:0,request:0};
 
 function selectModule(page, focus = false) {
+  const previous=advancedState.page;
   const panels = [...document.querySelectorAll("[data-page]")];
   if (!panels.some(panel=>panel.dataset.page===page)) page="overview";
   advancedState.page=page;
@@ -12,7 +13,10 @@ function selectModule(page, focus = false) {
     if(active && focus) {tab.focus();tab.scrollIntoView({block:"nearest",inline:"nearest"});}
   }
   if(location.hash!==`#${page}`) location.hash=page;
-  if(page==="review" && appState.data) loadReview();
+  if(previous!==page && appState.user) {
+    if(appState.data && (!appState.data.published_page || appState.data.published_page===page)) render();
+    else fetchDashboard();
+  }
 }
 
 function advancedValue(value,format) {
@@ -53,18 +57,19 @@ function renderAdvancedRanking(group) {
 
 function renderAdvanced(data) {
   const stats=data.advanced_stats;
-  for(const group of ["contribution","support","laning"]) {
+  for(const group of ["contribution","support","laning"].filter(group=>group===advancedState.page)) {
     const select=$(`${group}Metric`);
     const metrics=stats?.[group]?.metrics ?? [];
     if(!metrics.some(metric=>metric.key===advancedState.metrics[group])) advancedState.metrics[group]=metrics[0]?.key;
     select.innerHTML=metrics.map(metric=>`<option value="${metric.key}">${escapeHtml(metric.label)}</option>`).join("");
     select.value=advancedState.metrics[group] ?? "";
   }
-  const heroes=[...(stats?.laning.heroes ?? [])];
+  const heroes=[...(stats?.laning?.heroes ?? [])];
   if(advancedState.laneHero && !heroes.some(hero=>hero.id===Number(advancedState.laneHero))) heroes.push({id:Number(advancedState.laneHero),name:advancedState.laneHeroName || `英雄 ${advancedState.laneHero}`});
   $("laneHero").innerHTML='<option value="">全部英雄</option>'+heroes.map(hero=>`<option value="${hero.id}">${escapeHtml(hero.name)}</option>`).join("");
   $("laneHero").value=advancedState.laneHero;
-  for(const group of ["contribution","support","laning"]) renderAdvancedRanking(group);
+  for(const group of ["contribution","support","laning"].filter(group=>group===advancedState.page)) renderAdvancedRanking(group);
+  if(advancedState.page!=="review") return;
   const matches=stats?.review_matches ?? [];
   if(!matches.some(match=>match.match_id===advancedState.reviewId)) advancedState.reviewId=matches[0]?.match_id ?? null;
   $("reviewMatchSelect").innerHTML=matches.length ? matches.map(match=>`<option value="${match.match_id}">${escapeHtml(match.start_time)} · #${match.match_id}${match.parsed ? "" : match.checked ? " · 暂无解析" : " · 解析待确认"}</option>`).join("") : '<option value="">当前范围暂无比赛</option>';

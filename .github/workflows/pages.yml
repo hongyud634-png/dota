@@ -42,6 +42,11 @@ jobs:
       - name: Supplement advanced analysis and review files
         run: node scripts/update-analysis.mjs --all
 
+      - name: Build lightweight browser data
+        run: |
+          node scripts/build-browser-data.mjs
+          node scripts/check-loading.mjs
+
       - name: Save updated data
         run: |
           git config user.name "github-actions[bot]"

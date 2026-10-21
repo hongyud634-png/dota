@@ -84,6 +84,7 @@ function showApp() {
 
 async function checkAuth() {
   try {
+    if (location.hostname.endsWith(".github.io")) throw new Error("静态网站");
     const response = await fetch("/api/me", { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const payload = await response.json();
@@ -91,7 +92,6 @@ async function checkAuth() {
   } catch {
     if (!window.StaticBackend) throw new Error("没有可用的数据接口");
     appState.staticMode = true;
-    await window.StaticBackend.init();
     appState.user = window.StaticBackend.currentUser();
   }
   if (appState.user) {
@@ -151,17 +151,23 @@ async function fetchDashboard({ refresh = false, wait = false } = {}) {
   if (wait) params.set("wait", "1");
   try {
     if (appState.staticMode) {
-      appState.data = await window.StaticBackend.dashboard({
-        startDate: appState.startDate,
-        endDate: appState.endDate,
-        refresh,
-        wait,
-        autoRefresh: true,
-        onProgress: (message) => setStatus(`${refresh ? "手动同步" : "自动补齐"} · ${message}`),
-      });
-      if (appState.data.league.date_start !== appState.startDate || appState.data.league.date_end !== appState.endDate) {
-        appState.data = await window.StaticBackend.dashboard({startDate:appState.startDate, endDate:appState.endDate});
-      }
+      let requestedPage, requestedStart, requestedEnd;
+      do {
+        requestedPage = advancedState.page;
+        requestedStart = appState.startDate;
+        requestedEnd = appState.endDate;
+        appState.data = await window.StaticBackend.dashboard({
+          page: requestedPage,
+          startDate: requestedStart,
+          endDate: requestedEnd,
+          refresh,
+          wait,
+          autoRefresh: true,
+          onUpdate: () => fetchDashboard(),
+          onProgress: (message) => setStatus(`${refresh ? "手动同步" : "自动补齐"} · ${message}`),
+        });
+        refresh = false;
+      } while (requestedPage !== advancedState.page || requestedStart !== appState.startDate || requestedEnd !== appState.endDate);
       render();
       return;
     }
@@ -179,7 +185,6 @@ async function fetchDashboard({ refresh = false, wait = false } = {}) {
   } finally {
     appState.loading = false;
     $("syncButton").disabled = false;
-    if (window.lucide) window.lucide.createIcons();
   }
 }
 
@@ -431,16 +436,16 @@ function render() {
   const errorText = data.league.last_error ? ` · ${data.league.last_error}` : "";
   setStatus(`${data.league.scope_label} · ${data.league.data_stale ? "数据已过期 · " : ""}${syncText} ${data.league.last_sync_finished_at || "更新时间未知"}${errorText}`);
   initializeDateInputs(data);
-  renderKpis(data);
-  renderMetricOptions(data);
-  renderRanking(data);
-  renderHeroRanking(data);
-  renderMatchRecords(data);
-  renderAdvanced(data);
-  renderRecentMatches(data);
-  renderPlayers(data);
-  renderMatchTable(data);
-  if (window.lucide) window.lucide.createIcons();
+  const page = advancedState.page;
+  if (data.published_page && data.published_page !== page) return;
+  if (page === "overview") renderKpis(data);
+  if (page === "ranking") { renderMetricOptions(data); renderRanking(data); }
+  if (page === "heroes") renderHeroRanking(data);
+  if (page === "records") renderMatchRecords(data);
+  if (["contribution", "support", "laning", "review"].includes(page)) renderAdvanced(data);
+  if (page === "recent") renderRecentMatches(data);
+  if (page === "players") renderPlayers(data);
+  if (page === "matches") renderMatchTable(data);
 }
 
 function bindEvents() {

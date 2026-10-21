@@ -4,10 +4,11 @@ async (page) => {
     await page.getByRole('textbox', { name: '你的昵称' }).fill('UI验证');
     await page.getByRole('button', { name: '登录查看' }).click();
   }
-  await page.waitForFunction(() => document.querySelectorAll('#rankingList .podium-place').length === 3);
   await page.locator('#tab-ranking').click();
+  await page.waitForFunction(() => document.querySelectorAll('#rankingList .podium-place').length === 3);
   const baseline = await page.evaluate(async () => {
     const original = await StaticBackend.dashboard();
+    await fetchDashboard();
     return {
       samePlayers: JSON.stringify(original.players) === JSON.stringify(appState.data.players),
       sameRankings: JSON.stringify(original.rankings) === JSON.stringify(appState.data.rankings),

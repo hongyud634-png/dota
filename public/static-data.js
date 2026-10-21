@@ -28,6 +28,11 @@
     seedVersion: null,
     lastSeedCheckAt: 0,
     seedCheckPromise: null,
+    published: null,
+    publishedAt: 0,
+    publishedPromise: null,
+    pages: new Map(),
+    recoveryPromise: null,
   };
 
   const metricRanking = [
@@ -136,13 +141,13 @@
     return `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${shortName}.png`;
   }
 
-  async function fetchJson(url, { retries = 3, timeoutMs = 25000, onResponse } = {}) {
+  async function fetchJson(url, { retries = 3, timeoutMs = 25000, onResponse, cache = "no-store" } = {}) {
     let lastError;
     for (let attempt = 1; attempt <= retries; attempt += 1) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
-        const response = await fetch(url, { signal: controller.signal, cache: "no-store" });
+        const response = await fetch(url, { signal: controller.signal, cache });
         clearTimeout(timer);
         if (response.status === 429 || response.status >= 500) {
           lastError = new Error(`${response.status} ${response.statusText}`);
@@ -162,7 +167,7 @@
   }
 
   function dataUrl() {
-    return new URL("data/opendota_league_18113_seed.json", document.baseURI).toString();
+    return new URL("data/browser-seed.json", document.baseURI).toString();
   }
 
   function loadSeed(seedData) {
@@ -201,7 +206,7 @@
         loadSeed(seedData);
         state.initialized = true;
         state.lastSeedCheckAt = Date.now();
-      });
+      }).catch(error => { state.initPromise = null; throw error; });
     }
     await state.initPromise;
   }
@@ -526,6 +531,41 @@
   }
 
   async function dashboard(options = {}) {
+    if (options.page && !options.startDate && !options.endDate && !options.refresh && !state.initialized) {
+      try {
+        if (!state.published || Date.now() - state.publishedAt > 15000) {
+          if (!state.publishedPromise) state.publishedPromise = fetchJson(new URL("data/overview.json",document.baseURI),{cache:"no-cache",retries:1}).then(data=>{
+            if (!data.version || !data.league) throw Error("概览数据不完整");
+            if (state.published?.version !== data.version) state.pages.clear();
+            state.published=data;state.publishedAt=Date.now();
+            return data;
+          }).finally(()=>{state.publishedPromise=null;});
+          await state.publishedPromise;
+        }
+        const version=state.published.version;
+        const key=`${version}:${options.page}`;
+        if (!state.pages.has(key)) state.pages.set(key,options.page==="overview" ? Promise.resolve(state.published) :
+          fetchJson(new URL(`data/modules/${options.page}.json?v=${encodeURIComponent(version)}`,document.baseURI),{cache:"default",retries:1}).then(data=>{
+            if (data.version!==version || data.published_page!==options.page) throw Error("页签数据版本不一致");
+            return data;
+          }).catch(error=>{state.pages.delete(key);throw error;}));
+        const data=await state.pages.get(key);
+        const updatedAt=Date.parse(`${(data.league.last_sync_finished_at || "").replace(" ","T")}+08:00`);
+        const stale=!Number.isFinite(updatedAt) || Date.now()-updatedAt>2*60*60*1000;
+        const mayRetry=state.lastAutoSyncAttemptAt===null || Date.now()-state.lastAutoSyncAttemptAt>=5*60*1000;
+        if (options.autoRefresh && stale && mayRetry && !state.recoveryPromise) {
+          state.lastAutoSyncAttemptAt=Date.now();
+          state.recoveryPromise=(async()=>{
+            await init();
+            if(Date.now()-state.lastSyncEpoch>2*60*60*1000) await syncLatest(options.onProgress);
+          })().catch(error=>{state.lastAutoSyncAttemptAt=Date.now();state.lastError=`自动补齐失败：${error.message}`;})
+            .finally(()=>{state.recoveryPromise=null;setTimeout(()=>options.onUpdate?.(),0);});
+        }
+        return {...data,league:{...data.league,data_stale:stale,is_syncing:Boolean(state.recoveryPromise),last_error:state.lastError}};
+      } catch {
+        // A missing or inconsistent snapshot falls back to the same calculation path.
+      }
+    }
     await init();
     if (options.autoRefresh) await refreshPublishedData();
     const stale = Date.now() - state.lastSyncEpoch > 2 * 60 * 60 * 1000;
