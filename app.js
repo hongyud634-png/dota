@@ -436,6 +436,7 @@ function render() {
   renderRanking(data);
   renderHeroRanking(data);
   renderMatchRecords(data);
+  renderAdvanced(data);
   renderRecentMatches(data);
   renderPlayers(data);
   renderMatchTable(data);
@@ -443,6 +444,7 @@ function render() {
 }
 
 function bindEvents() {
+  bindAdvancedEvents();
   $("loginForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     const name = $("loginName").value.trim();

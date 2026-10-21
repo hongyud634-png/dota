@@ -1,6 +1,7 @@
 (function () {
   let buildHeroStats;
   let buildMatchRecords;
+  let buildAdvancedStats;
   const CONFIG = {
     leagueId: 18113,
     leagueName: "鹏辉产业园第三届AMER讲伍德比赛",
@@ -193,9 +194,10 @@
     if (!state.initPromise) {
       state.initPromise = Promise.all([fetchJson(dataUrl(), { retries: 2, timeoutMs: 45000,
         onResponse: response => { state.seedVersion = response.headers?.get("etag") || response.headers?.get("last-modified"); },
-      }), window.heroStatsReady, window.matchRecordsReady]).then(([seedData, heroModule, recordsModule]) => {
+      }), window.heroStatsReady, window.matchRecordsReady, window.advancedStatsReady]).then(([seedData, heroModule, recordsModule, advancedModule]) => {
         buildHeroStats = heroModule.buildHeroStats;
         buildMatchRecords = recordsModule.buildMatchRecords;
+        buildAdvancedStats = advancedModule.buildAdvancedStats;
         loadSeed(seedData);
         state.initialized = true;
         state.lastSeedCheckAt = Date.now();
@@ -464,6 +466,7 @@
     return {
       ...buildHeroStats(matches, state.heroesById, state.heroImagesById),
       ...buildMatchRecords(matches, state.heroesById, state.heroImagesById),
+      ...buildAdvancedStats(matches, state.heroesById, state.heroImagesById),
       league: {
         id: CONFIG.leagueId,
         name: CONFIG.leagueName,
