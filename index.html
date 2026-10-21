@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>OpenDota 联赛实时数据</title>
     <link rel="icon" type="image/png" href="assets/boxing-logo.png" />
-    <link rel="stylesheet" href="styles.css?v=hero-rank-1" />
+    <link rel="stylesheet" href="styles.css?v=records-1" />
     <script>window.heroStatsReady = import("./hero-stats.mjs?v=hero-rank-2");</script>
+    <script>window.matchRecordsReady = import("./match-records.mjs?v=records-1");</script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
-    <script src="static-data.js?v=hero-rank-2" defer></script>
-    <script src="app.js?v=hero-rank-1" defer></script>
+    <script src="static-data.js?v=records-1" defer></script>
+    <script src="app.js?v=records-1" defer></script>
   </head>
   <body>
     <section id="loginView" class="login-view">
@@ -103,6 +104,17 @@
         </div>
         <p id="heroCoverage" class="hero-coverage"></p>
         <div id="heroRankingList" class="ranking-list"></div>
+      </section>
+
+      <section class="panel" aria-label="单场纪录 Top 3">
+        <div class="panel-head">
+          <div>
+            <h2>单场纪录 Top 3</h2>
+            <p id="matchRecordsHint">正在读取单场纪录</p>
+          </div>
+        </div>
+        <p class="hero-coverage">各项取最高三条单场个人表现，同一玩家可占多席；同值按达成时间先后排列。死亡为最多死亡，KDA =（击杀 + 助攻）÷ max（死亡，1）；缺失值不参与。</p>
+        <div id="matchRecords" class="records-grid"></div>
       </section>
 
       <section class="panel table-panel">

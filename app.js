@@ -287,6 +287,26 @@ function renderHeroRanking(data) {
     : '<div class="empty-state">暂无可用数据</div>';
 }
 
+function renderMatchRecords(data) {
+  $("matchRecordsHint").textContent = `${data.league.scope_label} · ${formatInteger(data.league.included_matches)} 场比赛 · 单场个人数据`;
+  const names = new Map(data.players.map(player => [player.account_id,player.personaname]));
+  $("matchRecords").innerHTML = (data.match_records ?? []).map(metric => `
+    <article class="record-card">
+      <h3>${escapeHtml(metric.label)}</h3>
+      ${metric.rows.length ? metric.rows.map(row => {
+        const name = row.personaname || names.get(row.account_id) || (row.account_id == null ? "匿名玩家" : `玩家 ${row.account_id}`);
+        return `<div class="record-row">
+          <span class="record-rank record-rank-${row.rank}" aria-label="第 ${row.rank} 名">${row.rank}</span>
+          <div class="record-body">
+            <div class="record-heading"><strong title="${escapeHtml(name)}">${escapeHtml(name)}</strong><b>${metric.key === "kda" ? formatTwo(row.value) : formatInteger(row.value)}<small>${escapeHtml(metric.unit)}</small></b></div>
+            <div class="record-detail">${row.hero_image ? `<img src="${escapeHtml(row.hero_image)}" alt="" loading="lazy">` : ""}<span title="${escapeHtml(row.hero_name)}">${escapeHtml(row.hero_name)}</span><span>${row.account_id == null ? "匿名账号" : escapeHtml(row.account_id)}</span></div>
+            <a class="record-match" href="https://www.opendota.com/matches/${row.match_id}" target="_blank" rel="noreferrer">${escapeHtml(row.start_time)} · #${row.match_id}</a>
+          </div>
+        </div>`;
+      }).join("") : '<div class="empty-state">暂无可用数据</div>'}
+    </article>`).join("") || '<div class="empty-state">暂无可用数据</div>';
+}
+
 function renderRecentMatches(data) {
   $("latestMatchText").textContent = data.league.latest_match_time || "-";
   $("leagueLink").href = `https://www.opendota.com/leagues/${data.league.id}`;
@@ -415,6 +435,7 @@ function render() {
   renderMetricOptions(data);
   renderRanking(data);
   renderHeroRanking(data);
+  renderMatchRecords(data);
   renderRecentMatches(data);
   renderPlayers(data);
   renderMatchTable(data);
